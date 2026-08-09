@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/* ============================================
+   Medal Archive Pro — Design Tokens
+   Premium Digital Museum + Collection Management
+   ============================================ */
+
+:root {
+  /* Brand */
+  --primary: #6e1f2a;
+  --primary-deep: #43131b;
+  --primary-accent: #9b3a49;
+
+  /* Surfaces */
+  --background: #f7f5f2;
+  --surface: #ffffff;
+  --surface-muted: #f0ede8;
+  --surface-elevated: #ffffff;
+
+  /* Text */
+  --text: #1a1614;
+  --text-muted: #6b6560;
+  --text-subtle: #9a948e;
+
+  /* Borders */
+  --border: #e5e0d8;
+  --border-strong: #d4cdc3;
+
+  /* Semantic */
+  --success: #2d6a4f;
+  --success-bg: #d8f3e4;
+  --warning: #b45309;
+  --warning-bg: #fef3c7;
+  --danger: #b91c1c;
+  --danger-bg: #fee2e2;
+  --info: #1e40af;
+  --info-bg: #dbeafe;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadows (subtle, premium) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 6px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.08), 0 4px 8px -2px rgb(0 0 0 / 0.04);
+
+  /* Spacing scale reference (Tailwind handles most) */
+  --header-height: 3.5rem;
+  --sidebar-width: 16rem;
+  --sidebar-collapsed: 4.5rem;
+}
+
+/* Dark mode tokens (architecture ready) */
+.dark {
+  --primary: #c45a6a;
+  --primary-deep: #9b3a49;
+  --primary-accent: #e07a8a;
+
+  --background: #12100e;
+  --surface: #1c1917;
+  --surface-muted: #292524;
+  --surface-elevated: #292524;
+
+  --text: #f5f2ed;
+  --text-muted: #a8a29e;
+  --text-subtle: #78716c;
+
+  --border: #3f3a36;
+  --border-strong: #57534e;
+
+  --success: #4ade80;
+  --success-bg: #14532d;
+  --warning: #fbbf24;
+  --warning-bg: #78350f;
+  --danger: #f87171;
+  --danger-bg: #7f1d1d;
+  --info: #60a5fa;
+  --info-bg: #1e3a8a;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
+  --color-primary-accent: var(--primary-accent);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-elevated: var(--surface-elevated);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}
+
+/* Base */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus visibility for accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background-color: color-mix(in srgb, var(--primary) 25%, transparent);
+  color: var(--text);
+}
+
+/* Scrollbar (subtle) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
+}
+
+/* Utility for museum-style large numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
