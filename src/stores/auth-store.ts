@@ -5,6 +5,12 @@ import { persist } from "zustand/middleware";
 import type { UserMe } from "@/types/api";
 import { configureAuthHandlers } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
+import {
+  hasPermission as checkPermission,
+  hasRole as checkRole,
+  hasAnyPermission as checkAny,
+  hasAllPermissions as checkAll,
+} from "@/lib/permissions";
 
 interface AuthState {
   accessToken: string | null;
@@ -17,10 +23,11 @@ interface AuthState {
   setUser: (user: UserMe) => void;
   setHydrated: (v: boolean) => void;
 
-  /** Helper: does the current user hold a given permission codename? */
   hasPermission: (codename: string) => boolean;
-  /** Helper: does the current user hold any of the given roles? */
+  hasAnyPermission: (codenames: string[]) => boolean;
+  hasAllPermissions: (codenames: string[]) => boolean;
   hasRole: (...codenames: string[]) => boolean;
+  isAuthenticated: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -41,26 +48,11 @@ export const useAuthStore = create<AuthState>()(
 
       setHydrated: (v) => set({ isHydrated: v }),
 
-      hasPermission: (codename) => {
-        const user = get().user;
-        if (!user) return false;
-        const roleCodes = user.roles.map((r) => r.codename.toLowerCase());
-        if (
-          roleCodes.includes("superuser") ||
-          roleCodes.includes("admin") ||
-          roleCodes.includes("super_admin")
-        ) {
-          return true;
-        }
-        return false;
-      },
-
-      hasRole: (...codenames) => {
-        const user = get().user;
-        if (!user) return false;
-        const setCodes = new Set(user.roles.map((r) => r.codename.toLowerCase()));
-        return codenames.some((c) => setCodes.has(c.toLowerCase()));
-      },
+      hasPermission: (codename) => checkPermission(get().user, codename),
+      hasAnyPermission: (codenames) => checkAny(get().user, codenames),
+      hasAllPermissions: (codenames) => checkAll(get().user, codenames),
+      hasRole: (...codenames) => checkRole(get().user, ...codenames),
+      isAuthenticated: () => Boolean(get().accessToken && get().user),
     }),
     {
       name: "medal-archive-auth",
@@ -76,7 +68,6 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Wire the API client to the store once (client-side).
 if (typeof window !== "undefined") {
   configureAuthHandlers(
     () => useAuthStore.getState().accessToken,
@@ -84,18 +75,12 @@ if (typeof window !== "undefined") {
   );
 }
 
-/**
- * Login helper used by the login form.
- */
 export async function login(username: string, password: string) {
   const data = await authApi.login({ username, password });
   useAuthStore.getState().setSession(data.access, data.refresh, data.user);
   return data;
 }
 
-/**
- * Logout helper.
- */
 export async function logout() {
   const { refreshToken, clearSession } = useAuthStore.getState();
   try {
@@ -103,8 +88,21 @@ export async function logout() {
       await authApi.logout({ refresh: refreshToken });
     }
   } catch {
-    // ignore network errors on logout
+    // ignore
   } finally {
     clearSession();
+  }
+}
+
+export async function refreshCurrentUser() {
+  const { accessToken, setUser, clearSession } = useAuthStore.getState();
+  if (!accessToken) return null;
+  try {
+    const user = await authApi.me();
+    setUser(user);
+    return user;
+  } catch {
+    clearSession();
+    return null;
   }
 }
