@@ -1,0 +1,58 @@
+import type { Category } from "@/types/api";
+
+export const MOCK_CATEGORIES: Category[] = [
+  {
+    id: 1,
+    name: "نظامی",
+    slug: "military",
+    description: "مدال‌ها و نشان‌های نظامی و دفاعی",
+    is_active: true,
+    created_at: "2024-01-15T10:00:00Z",
+    updated_at: "2025-06-01T12:00:00Z",
+  },
+  {
+    id: 2,
+    name: "یادبود",
+    slug: "commemorative",
+    description: "مدال‌های یادبود رویدادهای تاریخی و ملی",
+    is_active: true,
+    created_at: "2024-01-15T10:05:00Z",
+    updated_at: "2025-05-20T09:30:00Z",
+  },
+  {
+    id: 3,
+    name: "سلطنتی",
+    slug: "royal",
+    description: "نشان‌ها و مدال‌های سلطنتی و درباری",
+    is_active: true,
+    created_at: "2024-02-01T08:00:00Z",
+    updated_at: "2025-04-12T14:00:00Z",
+  },
+  {
+    id: 4,
+    name: "ورزشی",
+    slug: "sports",
+    description: "مدال‌های ورزشی و المپیک",
+    is_active: true,
+    created_at: "2024-03-10T11:00:00Z",
+    updated_at: "2025-03-01T10:00:00Z",
+  },
+  {
+    id: 5,
+    name: "علمی و فرهنگی",
+    slug: "scientific-cultural",
+    description: "مدال‌های علمی، فرهنگی و هنری",
+    is_active: true,
+    created_at: "2024-04-05T09:00:00Z",
+    updated_at: "2025-02-18T16:00:00Z",
+  },
+  {
+    id: 6,
+    name: "مذهبی",
+    slug: "religious",
+    description: "نشان‌ها و مدال‌های مذهبی",
+    is_active: false,
+    created_at: "2024-05-01T07:00:00Z",
+    updated_at: "2024-12-01T08:00:00Z",
+  },
+];
