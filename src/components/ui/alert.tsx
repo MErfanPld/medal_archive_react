@@ -12,9 +12,12 @@ const variants = {
 export function Alert({
   className,
   variant = "default",
+  title,
+  children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
   variant?: keyof typeof variants;
+  title?: string;
 }) {
   return (
     <div
@@ -25,6 +28,11 @@ export function Alert({
         className
       )}
       {...props}
-    />
+    >
+      {title && <p className="font-medium">{title}</p>}
+      {children && (
+        <div className={cn(title && "mt-1 opacity-90")}>{children}</div>
+      )}
+    </div>
   );
 }
