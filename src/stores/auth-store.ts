@@ -13,7 +13,6 @@ import {
 } from "@/lib/permissions";
 import {
   MOCK_CURRENT_USER,
-  MOCK_ROLES,
   MOCK_USERS,
 } from "@/data/mock/users";
 
@@ -73,7 +72,6 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Wire the API client to the store once (client-side).
 if (typeof window !== "undefined") {
   configureAuthHandlers(
     () => useAuthStore.getState().accessToken,
@@ -81,17 +79,20 @@ if (typeof window !== "undefined") {
   );
 }
 
-/** True only in local development — never in production builds. */
+/**
+ * Mock auth is OPT-IN only.
+ * Real API is the default. Set NEXT_PUBLIC_USE_MOCK_AUTH=1 to force mock login.
+ * Never enabled in production builds.
+ */
 export const isDevMockAuthEnabled =
   process.env.NODE_ENV === "development" &&
-  process.env.NEXT_PUBLIC_DISABLE_MOCK_AUTH !== "1";
+  process.env.NEXT_PUBLIC_USE_MOCK_AUTH === "1";
 
-/**
- * Development-only mock login.
- * Maps known usernames to mock users with different roles for RBAC testing.
- * Password is ignored in mock mode (any non-empty works).
- */
-function mockLogin(username: string): { access: string; refresh: string; user: UserMe } {
+function mockLogin(username: string): {
+  access: string;
+  refresh: string;
+  user: UserMe;
+} {
   const normalized = username.trim().toLowerCase();
   const found = MOCK_USERS.find((u) => u.username.toLowerCase() === normalized);
 
@@ -118,7 +119,6 @@ function mockLogin(username: string): { access: string; refresh: string; user: U
       roles: [{ id: 1, name: "مدیر کل", codename: "admin" }],
     };
   } else {
-    // Default to admin for any other username in dev (convenient exploration)
     user = { ...MOCK_CURRENT_USER };
   }
 
@@ -134,9 +134,7 @@ function mockLogin(username: string): { access: string; refresh: string; user: U
 }
 
 export async function login(username: string, password: string) {
-  // ── Development mock auth (static frontend phase) ──────────────────
   if (isDevMockAuthEnabled) {
-    // Allow bypass without network: any password works for known mock users
     if (!password) {
       throw new Error("PASSWORD_REQUIRED");
     }
@@ -145,7 +143,6 @@ export async function login(username: string, password: string) {
     return data;
   }
 
-  // ── Production / real API ──────────────────────────────────────────
   const data = await authApi.login({ username, password });
   useAuthStore.getState().setSession(data.access, data.refresh, data.user);
   return data;
@@ -154,7 +151,6 @@ export async function login(username: string, password: string) {
 export async function logout() {
   const { refreshToken, clearSession, accessToken } = useAuthStore.getState();
   try {
-    // Skip real API call for mock tokens
     if (
       refreshToken &&
       !String(accessToken || "").startsWith("dev-mock-") &&
@@ -163,16 +159,15 @@ export async function logout() {
       await authApi.logout({ refresh: refreshToken });
     }
   } catch {
-    // ignore network errors on logout
+    // ignore
   } finally {
     clearSession();
+    if (typeof document !== "undefined") {
+      document.cookie = "medal_auth=; path=/; max-age=0; SameSite=Lax";
+    }
   }
 }
 
-/**
- * Refresh current user from the backend (call after login or on app start).
- * In mock mode, returns the stored user without a network call.
- */
 export async function refreshCurrentUser() {
   const { accessToken, user, setUser, clearSession } = useAuthStore.getState();
   if (!accessToken) return null;
@@ -191,7 +186,6 @@ export async function refreshCurrentUser() {
   }
 }
 
-/** Helper for login UI: list of demo accounts (dev only). */
 export function getDevMockAccounts() {
   if (!isDevMockAuthEnabled) return [];
   return [
