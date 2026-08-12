@@ -204,51 +204,60 @@ export const MOCK_MEDALS: Medal[] = [
   },
 ];
 
-export const MOCK_MUSEUM_MEDALS: MuseumMedal[] = MOCK_MEDALS.map((m) => ({
-  id: m.id,
-  name: m.name,
-  country: m.country,
-  year: m.year,
-  material: m.material,
-  category_name: m.category_detail?.name ?? "",
-  primary_image: m.primary_image,
-  authenticity: m.authenticity,
-}));
-
-export function getMockMedalImages(medalId: number): MedalImage[] {
-  return [
-    { id: 1, medal: medalId, image: "/images/medals/placeholder-1.jpg", is_primary: true, order: 1 },
-    { id: 2, medal: medalId, image: "/images/medals/placeholder-2.jpg", is_primary: false, order: 2 },
-  ];
+export function toMuseumMedal(m: Medal): MuseumMedal {
+  return {
+    id: m.id,
+    name: m.name,
+    country: m.country,
+    year: m.year,
+    material: m.material,
+    category_name: m.category_detail?.name ?? "",
+    primary_image: m.primary_image,
+    authenticity: m.authenticity,
+  };
 }
 
-export function getMockMedalPurchases(medalId: number): MedalPurchaseRecord[] {
-  const m = MOCK_MEDALS.find((x) => x.id === medalId);
-  if (!m || !m.purchase_price) return [];
-  return [
+export const MOCK_MUSEUM_MEDALS: MuseumMedal[] = MOCK_MEDALS.map(toMuseumMedal);
+
+export const MOCK_IMAGES: Record<number, MedalImage[]> = {
+  1: [
+    { id: 1, medal: 1, image: "/images/medals/placeholder-1.jpg", is_primary: true, order: 1 },
+    { id: 2, medal: 1, image: "/images/medals/placeholder-2.jpg", is_primary: false, order: 2 },
+  ],
+  2: [
+    { id: 3, medal: 2, image: "/images/medals/placeholder-2.jpg", is_primary: true, order: 1 },
+  ],
+};
+
+export const MOCK_FILES: Record<number, MedalFile[]> = {
+  1: [
+    { id: 1, medal: 1, file: "/files/certificate-1.pdf", name: "گواهی اصالت", file_type: "pdf" },
+  ],
+};
+
+export const MOCK_PURCHASES: Record<number, MedalPurchaseRecord[]> = {
+  1: [
     {
       id: 1,
-      medal: medalId,
-      purchase_date: m.purchase_date || "",
-      purchase_price: m.purchase_price,
-      purchase_currency: m.purchase_currency || "IRR",
-      seller: m.seller || "",
-      location: m.purchase_location || "",
+      medal: 1,
+      purchase_date: "2019-03-15",
+      purchase_price: "18500000",
+      purchase_currency: "IRR",
+      seller: "گالری هنر پارس",
+      location: "حراج تهران",
     },
-  ];
-}
+  ],
+};
 
-export function getMockMedalValuations(medalId: number): MedalValuationRecord[] {
-  const m = MOCK_MEDALS.find((x) => x.id === medalId);
-  if (!m || !m.current_value) return [];
-  return [
+export const MOCK_VALUATIONS: Record<number, MedalValuationRecord[]> = {
+  1: [
     {
       id: 1,
-      medal: medalId,
-      valuation_date: m.last_valuation_date || "",
-      estimated_value: m.current_value,
+      medal: 1,
+      valuation_date: "2025-11-01",
+      estimated_value: "42000000",
       currency: "IRR",
       notes: "برآورد بازار",
     },
-  ];
-}
+  ],
+};
