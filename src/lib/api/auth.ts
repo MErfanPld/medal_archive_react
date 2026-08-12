@@ -8,6 +8,14 @@ import type {
   InviteLinkCreateResponse,
 } from "@/types/api";
 
+/**
+ * Auth + Invite endpoints (OpenAPI)
+ * POST /api/users/login/
+ * POST /api/users/logout/
+ * GET  /api/users/me/
+ * POST /api/users/invite/
+ * POST /api/users/invite/{token}/consume/
+ */
 export const authApi = {
   login: (data: LoginRequest) =>
     api.post<TokenPairResponse>("/api/users/login/", data, { skipAuth: true }),
@@ -20,10 +28,10 @@ export const authApi = {
   createInvite: (data: InviteLinkCreateRequest) =>
     api.post<InviteLinkCreateResponse>("/api/users/invite/", data),
 
-  consumeInvite: (token: string) =>
+  consumeInvite: (token: string, body?: Record<string, unknown>) =>
     api.post<TokenPairResponse>(
       `/api/users/invite/${encodeURIComponent(token)}/consume/`,
-      undefined,
+      body ?? {},
       { skipAuth: true }
     ),
 };

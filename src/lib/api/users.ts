@@ -13,7 +13,7 @@ export interface UserListParams {
   is_active?: boolean;
 }
 
-function toQuery(params?: UserListParams): string {
+function toQuery(params?: Record<string, unknown>): string {
   if (!params) return "";
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -25,6 +25,9 @@ function toQuery(params?: UserListParams): string {
   return s ? `?${s}` : "";
 }
 
+/**
+ * Users + ACL endpoints (OpenAPI)
+ */
 export const usersApi = {
   list: (params?: UserListParams) =>
     api.get<PaginatedResponse<User>>(`/api/users/${toQuery(params)}`),
@@ -39,7 +42,7 @@ export const usersApi = {
 
   listRoles: (page?: number) =>
     api.get<PaginatedResponse<Role>>(
-      `/api/users/roles/${page ? `?page=${page}` : ""}`
+      `/api/users/roles/${toQuery(page != null ? { page } : undefined)}`
     ),
 
   retrieveRole: (id: number) => api.get<Role>(`/api/users/roles/${id}/`),
@@ -70,6 +73,6 @@ export const usersApi = {
 
   listPermissions: (page?: number) =>
     api.get<PaginatedResponse<Permission>>(
-      `/api/users/permissions/${page ? `?page=${page}` : ""}`
+      `/api/users/permissions/${toQuery(page != null ? { page } : undefined)}`
     ),
 };
