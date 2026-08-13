@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { UserMe } from "@/types/api";
+import type { UserMe, TokenPairResponse } from "@/types/api";
 import { configureAuthHandlers } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
 import {
@@ -16,13 +16,15 @@ import {
   MOCK_USERS,
 } from "@/data/mock/users";
 
+const AUTH_COOKIE = "medal_auth";
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   user: UserMe | null;
   isHydrated: boolean;
 
-  setSession: (access: string, refresh: string, user: UserMe) => void;
+  setSession: (access: string, refresh: string, user: UserMe | null) => void;
   clearSession: () => void;
   setUser: (user: UserMe) => void;
   setHydrated: (v: boolean) => void;
@@ -34,6 +36,15 @@ interface AuthState {
   isAuthenticated: () => boolean;
 }
 
+function setAuthCookie(on: boolean) {
+  if (typeof document === "undefined") return;
+  if (on) {
+    document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+  } else {
+    document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -42,11 +53,15 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isHydrated: false,
 
-      setSession: (access, refresh, user) =>
-        set({ accessToken: access, refreshToken: refresh, user }),
+      setSession: (access, refresh, user) => {
+        set({ accessToken: access, refreshToken: refresh, user });
+        setAuthCookie(true);
+      },
 
-      clearSession: () =>
-        set({ accessToken: null, refreshToken: null, user: null }),
+      clearSession: () => {
+        set({ accessToken: null, refreshToken: null, user: null });
+        setAuthCookie(false);
+      },
 
       setUser: (user) => set({ user }),
 
@@ -67,6 +82,9 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
+        if (state?.accessToken) {
+          setAuthCookie(true);
+        }
       },
     }
   )
@@ -79,20 +97,11 @@ if (typeof window !== "undefined") {
   );
 }
 
-/**
- * Mock auth is OPT-IN only.
- * Real API is the default. Set NEXT_PUBLIC_USE_MOCK_AUTH=1 to force mock login.
- * Never enabled in production builds.
- */
 export const isDevMockAuthEnabled =
   process.env.NODE_ENV === "development" &&
   process.env.NEXT_PUBLIC_USE_MOCK_AUTH === "1";
 
-function mockLogin(username: string): {
-  access: string;
-  refresh: string;
-  user: UserMe;
-} {
+function mockLogin(username: string): TokenPairResponse {
   const normalized = username.trim().toLowerCase();
   const found = MOCK_USERS.find((u) => u.username.toLowerCase() === normalized);
 
@@ -133,19 +142,45 @@ function mockLogin(username: string): {
   };
 }
 
+/**
+ * Production login:
+ * 1. POST /api/users/login/ { username, password }
+ * 2. Store access + refresh
+ * 3. GET /api/users/me/
+ * 4. Persist session
+ */
 export async function login(username: string, password: string) {
   if (isDevMockAuthEnabled) {
-    if (!password) {
-      throw new Error("PASSWORD_REQUIRED");
-    }
+    if (!password) throw new Error("PASSWORD_REQUIRED");
     const data = mockLogin(username);
-    useAuthStore.getState().setSession(data.access, data.refresh, data.user);
+    useAuthStore.getState().setSession(data.access, data.refresh, data.user ?? null);
     return data;
   }
 
-  const data = await authApi.login({ username, password });
-  useAuthStore.getState().setSession(data.access, data.refresh, data.user);
-  return data;
+  const data = await authApi.login({
+    username: username.trim(),
+    password,
+  });
+
+  if (!data?.access) {
+    throw new Error("پاسخ ورود ناقص است (access token موجود نیست).");
+  }
+
+  useAuthStore.getState().setSession(
+    data.access,
+    data.refresh ?? "",
+    data.user ?? null
+  );
+
+  try {
+    const me = await authApi.me();
+    useAuthStore.getState().setUser(me);
+    return { ...data, user: me };
+  } catch {
+    if (data.user) return data;
+    useAuthStore.getState().clearSession();
+    throw new Error("ورود موفق بود ولی دریافت اطلاعات کاربر ناموفق بود.");
+  }
 }
 
 export async function logout() {
@@ -162,9 +197,6 @@ export async function logout() {
     // ignore
   } finally {
     clearSession();
-    if (typeof document !== "undefined") {
-      document.cookie = "medal_auth=; path=/; max-age=0; SameSite=Lax";
-    }
   }
 }
 
@@ -179,6 +211,7 @@ export async function refreshCurrentUser() {
   try {
     const me = await authApi.me();
     setUser(me);
+    setAuthCookie(true);
     return me;
   } catch {
     clearSession();
