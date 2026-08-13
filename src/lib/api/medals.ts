@@ -33,7 +33,7 @@ export interface MedalListParams {
   diameter_max?: number;
 }
 
-function toQuery(params?: MedalListParams): string {
+function toQuery(params?: Record<string, unknown>): string {
   if (!params) return "";
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -47,7 +47,9 @@ function toQuery(params?: MedalListParams): string {
 
 export const medalsApi = {
   list: (params?: MedalListParams) =>
-    api.get<PaginatedResponse<Medal>>(`/api/medals/${toQuery(params)}`),
+    api.get<PaginatedResponse<Medal>>(
+      `/api/medals/${toQuery(params as Record<string, unknown>)}`
+    ),
 
   retrieve: (id: number) => api.get<Medal>(`/api/medals/${id}/`),
 
@@ -63,23 +65,30 @@ export const medalsApi = {
 
   museum: (id: number) => api.get<MuseumMedal>(`/api/medals/${id}/museum/`),
 
-  // Nested — Images
   listImages: (medalPk: number, page?: number) =>
     api.get<PaginatedResponse<MedalImage>>(
-      `/api/medals/${medalPk}/images/${page ? `?page=${page}` : ""}`
+      `/api/medals/${medalPk}/images/${toQuery(page != null ? { page } : undefined)}`
     ),
+
+  retrieveImage: (medalPk: number, id: number) =>
+    api.get<MedalImage>(`/api/medals/${medalPk}/images/${id}/`),
 
   createImage: (medalPk: number, formData: FormData) =>
     api.postForm<MedalImage>(`/api/medals/${medalPk}/images/`, formData),
 
+  updateImage: (medalPk: number, id: number, formData: FormData) =>
+    api.postForm<MedalImage>(`/api/medals/${medalPk}/images/${id}/`, formData),
+
   destroyImage: (medalPk: number, id: number) =>
     api.delete<void>(`/api/medals/${medalPk}/images/${id}/`),
 
-  // Nested — Files
   listFiles: (medalPk: number, page?: number) =>
     api.get<PaginatedResponse<MedalFile>>(
-      `/api/medals/${medalPk}/files/${page ? `?page=${page}` : ""}`
+      `/api/medals/${medalPk}/files/${toQuery(page != null ? { page } : undefined)}`
     ),
+
+  retrieveFile: (medalPk: number, id: number) =>
+    api.get<MedalFile>(`/api/medals/${medalPk}/files/${id}/`),
 
   createFile: (medalPk: number, formData: FormData) =>
     api.postForm<MedalFile>(`/api/medals/${medalPk}/files/`, formData),
@@ -87,10 +96,9 @@ export const medalsApi = {
   destroyFile: (medalPk: number, id: number) =>
     api.delete<void>(`/api/medals/${medalPk}/files/${id}/`),
 
-  // Nested — Purchases
   listPurchases: (medalPk: number, page?: number) =>
     api.get<PaginatedResponse<MedalPurchaseRecord>>(
-      `/api/medals/${medalPk}/purchases/${page ? `?page=${page}` : ""}`
+      `/api/medals/${medalPk}/purchases/${toQuery(page != null ? { page } : undefined)}`
     ),
 
   createPurchase: (medalPk: number, data: Partial<MedalPurchaseRecord>) =>
@@ -99,10 +107,9 @@ export const medalsApi = {
   destroyPurchase: (medalPk: number, id: number) =>
     api.delete<void>(`/api/medals/${medalPk}/purchases/${id}/`),
 
-  // Nested — Valuations
   listValuations: (medalPk: number, page?: number) =>
     api.get<PaginatedResponse<MedalValuationRecord>>(
-      `/api/medals/${medalPk}/valuations/${page ? `?page=${page}` : ""}`
+      `/api/medals/${medalPk}/valuations/${toQuery(page != null ? { page } : undefined)}`
     ),
 
   createValuation: (medalPk: number, data: Partial<MedalValuationRecord>) =>
