@@ -1,15 +1,36 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+export type SelectOption = {
+  value: string | number;
+  label: string;
+  disabled?: boolean;
+};
+
 export interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children"> {
   error?: string;
-  options: { value: string | number; label: string }[];
+  /** Preferred data-driven options. Defaults to []. Never crashes if omitted. */
+  options?: SelectOption[];
   placeholder?: string;
+  /** Optional native <option> children (merged after options). */
+  children?: React.ReactNode;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, error, options, placeholder, ...props }, ref) => {
+  (
+    {
+      className,
+      error,
+      options,
+      placeholder,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const safeOptions = Array.isArray(options) ? options : [];
+
     return (
       <div className="w-full">
         <select
@@ -21,16 +42,22 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             error && "border-danger focus-visible:outline-danger",
             className
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         >
-          {placeholder && (
+          {placeholder != null && placeholder !== "" && (
             <option value="">{placeholder}</option>
           )}
-          {options.map((opt) => (
-            <option key={String(opt.value)} value={opt.value}>
+          {safeOptions.map((opt) => (
+            <option
+              key={String(opt.value)}
+              value={opt.value}
+              disabled={opt.disabled}
+            >
               {opt.label}
             </option>
           ))}
+          {children}
         </select>
         {error && (
           <p className="mt-1.5 text-xs text-danger" role="alert">
