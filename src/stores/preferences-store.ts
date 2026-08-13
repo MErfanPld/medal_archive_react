@@ -68,6 +68,7 @@ interface PreferencesState {
   accentId: AccentPresetId;
   fontScale: FontScale;
   colorMode: ColorMode;
+  /** True only after client mount + store rehydrate; never apply DOM during SSR/hydration. */
   isHydrated: boolean;
   setAccentId: (id: AccentPresetId) => void;
   setFontScale: (scale: FontScale) => void;
@@ -83,6 +84,11 @@ function resolveDark(mode: ColorMode): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+/**
+ * Mutates documentElement CSS variables / dark class.
+ * Must only run after React hydration (e.g. useEffect), never during SSR
+ * or in onRehydrateStorage (that runs before React finishes hydrating).
+ */
 export function applyPreferencesToDocument(
   accentId: AccentPresetId,
   fontScale: FontScale,
@@ -142,9 +148,10 @@ export const usePreferencesStore = create<PreferencesState>()(
         fontScale: s.fontScale,
         colorMode: s.colorMode,
       }),
+      // Do NOT call applyToDocument here — it mutates <html> before React
+      // hydration and causes attribute mismatch on documentElement.
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
-        state?.applyToDocument();
       },
     }
   )

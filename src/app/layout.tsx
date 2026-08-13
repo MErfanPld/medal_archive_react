@@ -29,7 +29,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+    /*
+      Theme CSS variables are applied to <html> only after client mount
+      (see preferences-store). suppressHydrationWarning is limited to <html>
+      so React does not warn if attributes on this element differ briefly
+      (theme prefs / browser extensions). RootLayout itself emits no dynamic attrs.
+    */
+    <html
+      lang="fa"
+      dir="rtl"
+      className={`${vazirmatn.variable} h-full`}
+      suppressHydrationWarning
+    >
       <body className="min-h-full bg-background text-text antialiased">
         <Providers>{children}</Providers>
       </body>

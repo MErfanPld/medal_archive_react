@@ -5,16 +5,20 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ToastProvider } from "@/components/ui/toast";
 import { usePreferencesStore } from "@/stores/preferences-store";
 
+/**
+ * Applies persisted theme only after mount so SSR HTML and the first
+ * client render stay in sync (no documentElement style during hydration).
+ */
 function PreferencesBootstrap({ children }: { children: ReactNode }) {
   const applyToDocument = usePreferencesStore((s) => s.applyToDocument);
-  const isHydrated = usePreferencesStore((s) => s.isHydrated);
+  const setHydrated = usePreferencesStore((s) => s.setHydrated);
 
   useEffect(() => {
-    if (isHydrated) applyToDocument();
-  }, [isHydrated, applyToDocument]);
+    setHydrated(true);
+    applyToDocument();
+  }, [applyToDocument, setHydrated]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
       const mode = usePreferencesStore.getState().colorMode;
