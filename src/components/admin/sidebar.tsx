@@ -10,6 +10,7 @@ import {
   Shield,
   BarChart3,
   Settings,
+  Landmark,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,55 +23,105 @@ import {
   canViewRoles,
 } from "@/lib/permissions";
 
-export interface NavItem {
+type User = ReturnType<typeof useAuthStore.getState>["user"];
+
+interface NavLeaf {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  visible: (user: ReturnType<typeof useAuthStore.getState>["user"]) => boolean;
+  visible: (user: User) => boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
+interface NavGroup {
+  id: string;
+  label: string;
+  items: NavLeaf[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    href: "/admin/dashboard",
-    label: "داشبورد",
-    icon: LayoutDashboard,
-    visible: () => true,
+    id: "main",
+    label: "",
+    items: [
+      {
+        href: "/admin/dashboard",
+        label: "داشبورد",
+        icon: LayoutDashboard,
+        visible: () => true,
+      },
+    ],
   },
   {
-    href: "/admin/medals",
-    label: "مدال‌ها",
-    icon: Medal,
-    visible: (u) => canViewMedals(u),
+    id: "collection",
+    label: "مدیریت مجموعه",
+    items: [
+      {
+        href: "/admin/medals",
+        label: "مدال‌ها",
+        icon: Medal,
+        visible: (u) => canViewMedals(u),
+      },
+      {
+        href: "/admin/categories",
+        label: "دسته‌بندی‌ها",
+        icon: FolderOpen,
+        visible: (u) => canViewCategories(u),
+      },
+    ],
   },
   {
-    href: "/admin/categories",
-    label: "دسته‌بندی‌ها",
-    icon: FolderOpen,
-    visible: (u) => canViewCategories(u),
+    id: "museum",
+    label: "موزه",
+    items: [
+      {
+        href: "/museum",
+        label: "نمای موزه",
+        icon: Landmark,
+        visible: () => true,
+      },
+    ],
   },
   {
-    href: "/admin/users",
-    label: "کاربران",
-    icon: Users,
-    visible: (u) => canViewUsers(u),
+    id: "users",
+    label: "مدیریت کاربران",
+    items: [
+      {
+        href: "/admin/users",
+        label: "کاربران",
+        icon: Users,
+        visible: (u) => canViewUsers(u),
+      },
+      {
+        href: "/admin/roles",
+        label: "نقش‌ها",
+        icon: Shield,
+        visible: (u) => canViewRoles(u),
+      },
+    ],
   },
   {
-    href: "/admin/roles",
-    label: "نقش‌ها و دسترسی‌ها",
-    icon: Shield,
-    visible: (u) => canViewRoles(u),
-  },
-  {
-    href: "/admin/reports",
+    id: "reports",
     label: "گزارش‌ها",
-    icon: BarChart3,
-    visible: (u) => canViewReports(u),
+    items: [
+      {
+        href: "/admin/reports",
+        label: "گزارش‌ها",
+        icon: BarChart3,
+        visible: (u) => canViewReports(u),
+      },
+    ],
   },
   {
-    href: "/admin/settings",
-    label: "تنظیمات",
-    icon: Settings,
-    visible: () => true,
+    id: "settings",
+    label: "",
+    items: [
+      {
+        href: "/admin/settings",
+        label: "تنظیمات",
+        icon: Settings,
+        visible: () => true,
+      },
+    ],
   },
 ];
 
@@ -80,11 +131,21 @@ interface SidebarProps {
   collapsed?: boolean;
 }
 
+function isActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  if (href === "/admin/dashboard") return false;
+  if (href === "/museum") return pathname.startsWith("/museum");
+  return pathname.startsWith(href);
+}
+
 export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
 
-  const items = NAV_ITEMS.filter((item) => item.visible(user));
+  const groups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((item) => item.visible(user)),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <>
@@ -104,7 +165,7 @@ export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps)
         )}
         aria-label="منوی اصلی"
       >
-        <div className="flex h-14 items-center justify-between border-b border-border px-4">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
           {!collapsed && (
             <Link
               href="/admin/dashboard"
@@ -123,35 +184,59 @@ export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps)
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3">
-          <ul className="space-y-1">
-            {items.map((item) => {
-              const active =
-                pathname === item.href ||
-                (item.href !== "/admin/dashboard" &&
-                  pathname.startsWith(item.href));
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onClose}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      active
-                        ? "bg-primary/10 text-primary-deep"
-                        : "text-text-muted hover:bg-surface-muted hover:text-text"
-                    )}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    <Icon className="size-5 shrink-0" aria-hidden />
-                    {!collapsed && <span>{item.label}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <div key={group.id}>
+                {!collapsed && group.label ? (
+                  <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-text-subtle">
+                    {group.label}
+                  </p>
+                ) : null}
+                <ul className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          title={collapsed ? item.label : undefined}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                            active
+                              ? "bg-primary/10 text-primary-deep"
+                              : "text-text-muted hover:bg-surface-muted hover:text-text"
+                          )}
+                          aria-current={active ? "page" : undefined}
+                        >
+                          <Icon className="size-5 shrink-0" aria-hidden />
+                          {!collapsed && <span>{item.label}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         </nav>
+
+        {!collapsed && user && (
+          <div className="shrink-0 border-t border-border p-3">
+            <div className="rounded-lg bg-surface-muted/60 px-3 py-2.5">
+              <p className="truncate text-sm font-medium text-text">
+                {user.first_name || user.last_name
+                  ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+                  : user.username}
+              </p>
+              <p className="truncate text-xs text-text-muted" dir="ltr">
+                {user.username}
+              </p>
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );
