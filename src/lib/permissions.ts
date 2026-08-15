@@ -128,6 +128,9 @@ export function canViewReports(user: UserMe | null | undefined) {
 export function canViewUsers(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.USERS_VIEW) || isFullAccess(user);
 }
+export function canManageUsers(user: UserMe | null | undefined) {
+  return hasPermission(user, PERMISSIONS.USERS_MANAGE) || isFullAccess(user);
+}
 export function canViewRoles(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.ROLES_VIEW) || isFullAccess(user);
 }
