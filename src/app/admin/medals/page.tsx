@@ -3,8 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Eye, Pencil, Trash2, Filter, Medal as MedalIcon } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  Medal as MedalIcon,
+} from "lucide-react";
 import { getMedals, deleteMedal } from "@/lib/data/medals";
+import {
+  authenticityLabel,
+  authenticityVariant,
+} from "@/lib/medal-labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +48,7 @@ export default function MedalsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-32" />
         </div>
@@ -52,7 +63,7 @@ export default function MedalsPage() {
 
   if (error) {
     return (
-      <div className="text-center py-12 text-destructive">
+      <div className="py-12 text-center text-destructive">
         خطا در بارگذاری مدال‌ها
       </div>
     );
@@ -63,25 +74,25 @@ export default function MedalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
             <MedalIcon className="h-7 w-7 text-primary" />
             مدال‌ها
           </h1>
-          <p className="text-sm text-text-muted mt-1">{total} مدال در آرشیو</p>
+          <p className="mt-1 text-sm text-text-muted">{total} مدال در آرشیو</p>
         </div>
         <Button asChild>
           <Link href="/admin/medals/new">
-            <Plus className="h-4 w-4 ml-2" />
+            <Plus className="ml-2 h-4 w-4" />
             ثبت مدال جدید
           </Link>
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <Input
             placeholder="جستجو در نام، کشور، سال..."
             value={search}
@@ -106,51 +117,67 @@ export default function MedalsPage() {
         />
       ) : (
         <>
-          <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-right p-3 font-medium">مدال</th>
-                  <th className="text-right p-3 font-medium">کشور</th>
-                  <th className="text-right p-3 font-medium">سال</th>
-                  <th className="text-right p-3 font-medium">ماده</th>
-                  <th className="text-right p-3 font-medium">وضعیت</th>
-                  <th className="text-right p-3 font-medium">عملیات</th>
+                  <th className="p-3 text-right font-medium">مدال</th>
+                  <th className="p-3 text-right font-medium">کشور</th>
+                  <th className="p-3 text-right font-medium">سال</th>
+                  <th className="p-3 text-right font-medium">جنس</th>
+                  <th className="p-3 text-right font-medium">اصالت</th>
+                  <th className="p-3 text-right font-medium">عملیات</th>
                 </tr>
               </thead>
               <tbody>
                 {medals.map((m: Medal) => (
-                  <tr key={m.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={m.id}
+                    className="border-t border-border transition-colors hover:bg-muted/30"
+                  >
                     <td className="p-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
                           {m.name.slice(0, 2)}
                         </div>
                         <div>
-                          <Link href={`/admin/medals/${m.id}`} className="font-medium hover:text-primary">
+                          <Link
+                            href={`/admin/medals/${m.id}`}
+                            className="font-medium hover:text-primary"
+                          >
                             {m.name}
                           </Link>
-                          <p className="text-xs text-text-muted">{m.catalog_number}</p>
+                          <p className="text-xs text-text-muted">
+                            {m.catalog_number}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-3">{m.country}</td>
-                    <td className="p-3">{m.year}</td>
-                    <td className="p-3">{m.material}</td>
+                    <td className="p-3">{m.country || "—"}</td>
+                    <td className="p-3">{m.year ?? "—"}</td>
+                    <td className="p-3">{m.material || "—"}</td>
                     <td className="p-3">
-                      <Badge variant={m.authenticity === "authentic" ? "default" : "secondary"}>
-                        {m.authenticity === "authentic" ? "اصیل" : m.authenticity}
+                      <Badge variant={authenticityVariant(m.authenticity)}>
+                        {authenticityLabel(m.authenticity)}
                       </Badge>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/admin/medals/${m.id}`}><Eye className="h-4 w-4" /></Link>
+                          <Link href={`/admin/medals/${m.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </Button>
                         <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/admin/medals/${m.id}/edit`}><Pencil className="h-4 w-4" /></Link>
+                          <Link href={`/admin/medals/${m.id}/edit`}>
+                            <Pencil className="h-4 w-4" />
+                          </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteId(m.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteId(m.id)}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -161,25 +188,32 @@ export default function MedalsPage() {
             </table>
           </div>
 
-          <div className="md:hidden grid gap-4">
+          <div className="grid gap-4 md:hidden">
             {medals.map((m: Medal) => (
               <Card key={m.id} className="overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
-                      <Link href={`/admin/medals/${m.id}`} className="font-semibold hover:text-primary">
+                      <Link
+                        href={`/admin/medals/${m.id}`}
+                        className="font-semibold hover:text-primary"
+                      >
                         {m.name}
                       </Link>
-                      <p className="text-xs text-text-muted mt-1">{m.country} · {m.year}</p>
+                      <p className="mt-1 text-xs text-text-muted">
+                        {m.country} · {m.year}
+                      </p>
                     </div>
-                    <Badge>{m.material}</Badge>
+                    <Badge variant={authenticityVariant(m.authenticity)}>
+                      {authenticityLabel(m.authenticity)}
+                    </Badge>
                   </div>
-                  <div className="flex gap-2 mt-3">
+                  <div className="mt-3 flex gap-2">
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`/admin/medals/${m.id}`}>مشاهده</Link>
                     </Button>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/admin/medals/${m.id}/edit`}>ویرایش</Link>
+                      <Link href={`/admin/medals/${m.id}/edit">ویرایش</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -190,7 +224,8 @@ export default function MedalsPage() {
           {total > 12 && (
             <Pagination
               page={page}
-              totalPages={Math.ceil(total / 12)}
+              pageSize={12}
+              total={total}
               onPageChange={setPage}
             />
           )}
@@ -199,12 +234,13 @@ export default function MedalsPage() {
 
       <ConfirmDialog
         open={deleteId !== null}
-        onOpenChange={(open) => !open && setDeleteId(null)}
+        onClose={() => setDeleteId(null)}
         title="حذف مدال"
         description="آیا از حذف این مدال مطمئن هستید؟ این عمل قابل بازگشت نیست."
         confirmLabel="حذف"
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         loading={deleteMutation.isPending}
+        variant="danger"
       />
     </div>
   );
