@@ -7,14 +7,15 @@ import type {
   InviteLinkCreateRequest,
   InviteLinkCreateResponse,
 } from "@/types/api";
+import { invitesApi } from "./invites";
 
 /**
- * Auth + Invite endpoints (OpenAPI)
+ * Auth endpoints (OpenAPI)
  * POST /api/users/login/
  * POST /api/users/logout/
  * GET  /api/users/me/
- * POST /api/users/invite/
- * POST /api/users/invite/{token}/consume/
+ *
+ * Invite helpers re-export invitesApi for backward compatibility.
  */
 export const authApi = {
   login: (data: LoginRequest) =>
@@ -25,13 +26,10 @@ export const authApi = {
 
   me: () => api.get<UserMe>("/api/users/me/"),
 
+  /** @deprecated prefer invitesApi.create */
   createInvite: (data: InviteLinkCreateRequest) =>
-    api.post<InviteLinkCreateResponse>("/api/users/invite/", data),
+    invitesApi.create(data),
 
-  consumeInvite: (token: string, body?: Record<string, unknown>) =>
-    api.post<TokenPairResponse>(
-      `/api/users/invite/${encodeURIComponent(token)}/consume/`,
-      body ?? {},
-      { skipAuth: true }
-    ),
+  /** @deprecated prefer invitesApi.consume */
+  consumeInvite: (token: string) => invitesApi.consume(token),
 };
