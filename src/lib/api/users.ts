@@ -27,6 +27,19 @@ function toQuery(params?: Record<string, unknown>): string {
 
 /**
  * Users + ACL endpoints (OpenAPI)
+ *
+ * Users:
+ *   GET   /api/users/
+ *   GET   /api/users/{id}/
+ *   PATCH /api/users/{id}/          (activate / deactivate)
+ *   PUT   /api/users/{id}/roles/    (replace roles)
+ *
+ * Roles:
+ *   GET/POST          /api/users/roles/
+ *   GET/PUT/PATCH/DEL /api/users/roles/{id}/
+ *
+ * Permissions:
+ *   GET /api/users/permissions/
  */
 export const usersApi = {
   list: (params?: UserListParams) =>
@@ -40,9 +53,9 @@ export const usersApi = {
   assignRoles: (id: number, data: UserRoleAssignRequest) =>
     api.put<User>(`/api/users/${id}/roles/`, data),
 
-  listRoles: (page?: number) =>
-    api.get<PaginatedResponse<Role>>(
-      `/api/users/roles/${toQuery(page != null ? { page } : undefined)}`
+  listRoles: (params?: { page?: number; page_size?: number }) =>
+    api.get<PaginatedResponse<Role> | Role[]>(
+      `/api/users/roles/${toQuery(params)}`
     ),
 
   retrieveRole: (id: number) => api.get<Role>(`/api/users/roles/${id}/`),
@@ -71,8 +84,8 @@ export const usersApi = {
 
   destroyRole: (id: number) => api.delete<void>(`/api/users/roles/${id}/`),
 
-  listPermissions: (page?: number) =>
-    api.get<PaginatedResponse<Permission>>(
-      `/api/users/permissions/${toQuery(page != null ? { page } : undefined)}`
+  listPermissions: (params?: { page?: number; page_size?: number }) =>
+    api.get<PaginatedResponse<Permission> | Permission[]>(
+      `/api/users/permissions/${toQuery(params)}`
     ),
 };
