@@ -9,9 +9,6 @@ import {
   User as UserIcon,
   Shield,
   Link2,
-  Copy,
-  Check,
-  ExternalLink,
 } from "lucide-react";
 import {
   getUserById,
@@ -19,12 +16,8 @@ import {
   assignUserRoles,
   getAllRoles,
 } from "@/lib/data/users";
-import { invitesApi } from "@/lib/api/invites";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -39,15 +32,6 @@ import { useAuthStore } from "@/stores/auth-store";
 import { PERMISSIONS } from "@/lib/permissions";
 import { useToast } from "@/components/ui/toast";
 import { getErrorMessage } from "@/lib/api/errors";
-import { resolveInviteUrl } from "@/lib/invite-url";
-import type { InviteLinkCreateResponse } from "@/types/api";
-
-const EXPIRY_OPTIONS = [
-  { value: 24, label: "۲۴ ساعت" },
-  { value: 48, label: "۴۸ ساعت" },
-  { value: 72, label: "۷۲ ساعت" },
-  { value: 168, label: "۷ روز" },
-];
 
 export default function UserDetailPage() {
   const params = useParams();
@@ -57,11 +41,6 @@ export default function UserDetailPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canManage = hasPermission(PERMISSIONS.USERS_MANAGE);
   const [selectedRoles, setSelectedRoles] = useState<number[] | null>(null);
-  const [invitePassword, setInvitePassword] = useState("");
-  const [inviteExpiry, setInviteExpiry] = useState(48);
-  const [inviteResult, setInviteResult] =
-    useState<InviteLinkCreateResponse | null>(null);
-  const [inviteCopied, setInviteCopied] = useState(false);
 
   const { data: user, isLoading, isError, refetch } = useQuery({
     queryKey: ["user", userId],
@@ -97,17 +76,6 @@ export default function UserDetailPage() {
     },
     onError: (err) => {
       toast.error(getErrorMessage(err, "خطا در ذخیره نقش‌ها"));
-    },
-  });
-
-  const inviteMutation = useMutation({
-    mutationFn: invitesApi.create,
-    onSuccess: (data) => {
-      setInviteResult(data);
-      toast.success("لینک دعوت ساخته شد");
-    },
-    onError: (err) => {
-      toast.error(getErrorMessage(err, "خطا در ساخت لینک دعوت"));
     },
   });
 
@@ -309,138 +277,44 @@ export default function UserDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Link2 className="size-4 text-primary" />
-              لینک دعوت / ورود
+              ورود و دعوت
             </CardTitle>
             <CardDescription>
-              ساخت لینک یک‌بارمصرف برای این کاربر.
+              این حساب از قبل در سیستم ثبت شده است.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {inviteResult ? (
-              <div className="space-y-3">
-                <div className="rounded-xl border border-border bg-surface-muted/40 p-3">
-                  <p
-                    className="break-all font-mono text-sm leading-relaxed select-all"
-                    dir="ltr"
-                  >
-                    {resolveInviteUrl({
-                      invite_url: inviteResult.invite_url,
-                      token: inviteResult.token,
-                    })}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={async () => {
-                      const url = resolveInviteUrl({
-                        invite_url: inviteResult.invite_url,
-                        token: inviteResult.token,
-                      });
-                      try {
-                        await navigator.clipboard.writeText(url);
-                        setInviteCopied(true);
-                        toast.success("آدرس کامل کپی شد");
-                        setTimeout(() => setInviteCopied(false), 2000);
-                      } catch {
-                        toast.error("کپی ناموفق بود");
-                      }
-                    }}
-                  >
-                    {inviteCopied ? (
-                      <>
-                        <Check className="size-4" />
-                        کپی شد
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-4" />
-                        کپی لینک
-                      </>
-                    )}
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" asChild>
-                    <a
-                      href={resolveInviteUrl({
-                        invite_url: inviteResult.invite_url,
-                        token: inviteResult.token,
-                      })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="size-4" />
-                      باز کردن
-                    </a>
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setInviteResult(null);
-                      setInvitePassword("");
-                    }}
-                  >
-                    ساخت لینک دیگر
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <Label>نام کاربری</Label>
-                  <Input className="mt-1.5" value={user.username} readOnly dir="ltr" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label htmlFor="reinvite-password">رمز موقت (حداقل ۱۰ کاراکتر)</Label>
-                  <Input
-                    id="reinvite-password"
-                    type="password"
-                    dir="ltr"
-                    className="mt-1.5"
-                    placeholder="Medal!Archive2026"
-                    value={invitePassword}
-                    onChange={(e) => setInvitePassword(e.target.value)}
-                    disabled={inviteMutation.isPending}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="reinvite-expiry">اعتبار لینک</Label>
-                  <Select
-                    id="reinvite-expiry"
-                    className="mt-1.5"
-                    value={String(inviteExpiry)}
-                    onChange={(e) => setInviteExpiry(Number(e.target.value))}
-                    disabled={inviteMutation.isPending}
-                    options={EXPIRY_OPTIONS.map((o) => ({
-                      value: o.value,
-                      label: o.label,
-                    }))}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    loading={inviteMutation.isPending}
-                    disabled={inviteMutation.isPending || invitePassword.length < 10}
-                    onClick={() => {
-                      inviteMutation.mutate({
-                        username: user.username,
-                        password: invitePassword,
-                        email: user.email || undefined,
-                        expires_in_hours: inviteExpiry,
-                        role_ids:
-                          user.roles?.map((r) => r.id).filter(Boolean) || undefined,
-                      });
-                    }}
-                  >
-                    <Link2 className="size-4" />
-                    ساخت لینک دعوت
-                  </Button>
-                </div>
-              </div>
-            )}
+          <CardContent className="space-y-4 text-sm">
+            <Alert title="لینک دعوت فقط برای کاربر جدید">
+              دعوت، حساب جدید می‌سازد. چون نام کاربری{" "}
+              <code className="rounded bg-surface-muted px-1" dir="ltr">
+                {user.username}
+              </code>{" "}
+              از قبل ثبت شده، سرور خطای «نام کاربری قبلاً استفاده شده» می‌دهد.
+            </Alert>
+            <ul className="list-inside list-disc space-y-1 text-text-muted">
+              <li>
+                کاربر موجود می‌تواند با همان نام کاربری و رمز از{" "}
+                <Link href="/login" className="text-primary underline">
+                  /login
+                </Link>{" "}
+                وارد شود.
+              </li>
+              <li>
+                برای دعوت نفر جدید، از صفحه دعوت با{" "}
+                <strong>نام کاربری تازه</strong> استفاده کنید.
+              </li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <Link href="/admin/users/invite">
+                  <Link2 className="size-4" />
+                  دعوت کاربر جدید
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/login">صفحه ورود</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
