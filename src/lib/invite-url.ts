@@ -1,17 +1,17 @@
 /**
- * Build a usable invite/activation URL for the current frontend.
+ * Build a usable invite URL for the current frontend.
  *
- * Backend often returns a placeholder like:
+ * Backend often returns a placeholder:
  *   https://your-frontend.com/activate?token=...
- * while this app consumes invites at:
- *   /invite/{token}
+ * App consumes at:
+ *   {origin}/invite/{token}
  */
 
 export function extractInviteToken(
   inviteUrl?: string | null,
   token?: string | null
 ): string | null {
-  if (token && token.trim()) return token.trim();
+  if (token && String(token).trim()) return String(token).trim();
   if (!inviteUrl) return null;
 
   try {
@@ -34,6 +34,9 @@ export function extractInviteToken(
   return null;
 }
 
+/**
+ * Full app URL: http://localhost:3000/invite/{token}
+ */
 export function resolveInviteUrl(params: {
   invite_url?: string | null;
   token?: string | null;
@@ -45,7 +48,8 @@ export function resolveInviteUrl(params: {
     (typeof window !== "undefined" ? window.location.origin : "");
 
   if (token && origin) {
-    return `${origin.replace(/\/$/, "")}/invite/${encodeURIComponent(token)}`;
+    const safe = encodeURI(token).replace(/#/g, "%23").replace(/\?/g, "%3F");
+    return `${origin.replace(/\/$/, "")}/invite/${safe}`;
   }
 
   if (params.invite_url) return params.invite_url;
