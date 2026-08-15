@@ -27,13 +27,8 @@ import { getErrorMessage } from "@/lib/api/errors";
 import { useAuthStore } from "@/stores/auth-store";
 import { PERMISSIONS } from "@/lib/permissions";
 import type { InviteLinkCreateResponse } from "@/types/api";
+import { resolveInviteUrl } from "@/lib/invite-url";
 
-/**
- * Backend InviteLinkCreateSerializer (medal_archive_api):
- * - password min_length=10 + Django validate_password
- * - expires_in_hours: 1 .. 336 (14 days)
- * - username must not already exist
- */
 const EXPIRY_OPTIONS = [
   { value: 1, label: "۱ ساعت" },
   { value: 6, label: "۶ ساعت" },
@@ -101,7 +96,6 @@ export default function InviteUserPage() {
     onError: (err) => {
       const msg = getErrorMessage(err, "خطا در ساخت لینک دعوت");
       toast.error(msg);
-
       if (err instanceof ApiError && err.body && typeof err.body === "object") {
         const body = err.body as Record<string, unknown>;
         const fieldMap: Record<string, keyof FormValues> = {
@@ -118,9 +112,7 @@ export default function InviteUserPage() {
             : typeof val === "string"
               ? val
               : "";
-          if (text) {
-            setError(field, { type: "server", message: text });
-          }
+          if (text) setError(field, { type: "server", message: text });
         }
       }
     },
@@ -138,7 +130,6 @@ export default function InviteUserPage() {
     if (mutation.isPending) return;
     setResult(null);
     clearErrors();
-
     const payload: {
       username: string;
       password: string;
@@ -153,14 +144,20 @@ export default function InviteUserPage() {
     const email = values.email?.trim();
     if (email) payload.email = email;
     if (selectedRoles.length > 0) payload.role_ids = selectedRoles;
-
     mutation.mutate(payload);
   });
 
+  const displayInviteUrl = result
+    ? resolveInviteUrl({
+        invite_url: result.invite_url,
+        token: result.token,
+      })
+    : "";
+
   const copyLink = async () => {
-    if (!result?.invite_url) return;
+    if (!displayInviteUrl) return;
     try {
-      await navigator.clipboard.writeText(result.invite_url);
+      await navigator.clipboard.writeText(displayInviteUrl);
       setCopied(true);
       toast.success("لینک کپی شد");
       setTimeout(() => setCopied(false), 2000);
@@ -196,8 +193,7 @@ export default function InviteUserPage() {
               لینک دعوت با موفقیت ایجاد شد
             </CardTitle>
             <CardDescription>
-              این لینک از سمت سرور ساخته شده است. آن را برای کاربر جدید بفرستید.
-              لینک یک‌بارمصرف است.
+              لینک زیر برای همین فرانت‌اند ساخته شده و یک‌بارمصرف است.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -207,35 +203,16 @@ export default function InviteUserPage() {
                 <span className="font-medium text-text" dir="ltr">
                   {result.user.username}
                 </span>
-                {result.user.email ? (
-                  <span className="text-text-subtle" dir="ltr">
-                    {" "}
-                    ({result.user.email})
-                  </span>
-                ) : null}
-              </p>
-            )}
-            {result.token && (
-              <p className="text-meta">
-                توکن:{" "}
-                <code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs" dir="ltr">
-                  {result.token}
-                </code>
               </p>
             )}
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 readOnly
-                value={result.invite_url}
+                value={displayInviteUrl}
                 dir="ltr"
                 className="font-mono text-xs"
               />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={copyLink}
-                className="shrink-0"
-              >
+              <Button type="button" variant="secondary" onClick={copyLink} className="shrink-0">
                 {copied ? (
                   <>
                     <Check className="size-4" />
@@ -251,8 +228,7 @@ export default function InviteUserPage() {
             </div>
             {result.expires_at && (
               <p className="text-meta">
-                انقضا:{" "}
-                {new Date(result.expires_at).toLocaleString("fa-IR")}
+                انقضا: {new Date(result.expires_at).toLocaleString("fa-IR")}
               </p>
             )}
             {result.warning && (
@@ -285,9 +261,6 @@ export default function InviteUserPage() {
           <Card>
             <CardHeader>
               <CardTitle>اطلاعات حساب</CardTitle>
-              <CardDescription>
-                نام کاربری و رمز موقت مطابق قرارداد API ارسال می‌شوند.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -315,8 +288,7 @@ export default function InviteUserPage() {
                   error={errors.password?.message}
                 />
                 <p className="mt-1 text-xs text-text-muted">
-                  حداقل ۱۰ کاراکتر؛ نباید فقط عدد باشد، شبیه نام کاربری یا خیلی
-                  رایج (مثل Password123) باشد — قوانین Django validate_password.
+                  حداقل ۱۰ کاراکتر (الزام Backend). مثال: Medal!Archive2026
                 </p>
               </div>
               <div>
@@ -342,9 +314,7 @@ export default function InviteUserPage() {
                       className="mt-1.5"
                       disabled={mutation.isPending}
                       value={String(field.value)}
-                      onChange={(e) =>
-                        field.onChange(Number(e.target.value))
-                      }
+                      onChange={(e) => field.onChange(Number(e.target.value))}
                       options={EXPIRY_OPTIONS.map((o) => ({
                         value: o.value,
                         label: o.label,
@@ -359,10 +329,6 @@ export default function InviteUserPage() {
           <Card>
             <CardHeader>
               <CardTitle>نقش‌های اولیه</CardTitle>
-              <CardDescription>
-                نقش‌ها از API واقعی دریافت می‌شوند و در فیلد{" "}
-                <code className="text-xs">role_ids</code> ارسال می‌گردند.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {rolesLoading && (
@@ -371,7 +337,7 @@ export default function InviteUserPage() {
               {(rolesData?.results ?? []).map((role) => (
                 <label
                   key={role.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 transition-colors hover:bg-surface-muted"
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-surface-muted"
                 >
                   <input
                     type="checkbox"
@@ -387,16 +353,8 @@ export default function InviteUserPage() {
                     }}
                   />
                   <span className="text-sm">{role.name}</span>
-                  <span className="mr-auto font-mono text-xs text-text-subtle">
-                    {role.codename}
-                  </span>
                 </label>
               ))}
-              {!rolesLoading && !rolesData?.results?.length && (
-                <p className="text-sm text-text-muted">
-                  نقشی از سرور دریافت نشد.
-                </p>
-              )}
             </CardContent>
           </Card>
 
@@ -410,11 +368,7 @@ export default function InviteUserPage() {
             <Button variant="outline" asChild disabled={mutation.isPending}>
               <Link href="/admin/users">انصراف</Link>
             </Button>
-            <Button
-              type="submit"
-              loading={mutation.isPending}
-              disabled={mutation.isPending}
-            >
+            <Button type="submit" loading={mutation.isPending} disabled={mutation.isPending}>
               ایجاد لینک دعوت
             </Button>
           </div>
