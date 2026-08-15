@@ -38,6 +38,8 @@ export const usersApi = {
   setActive: (id: number, is_active: boolean) =>
     api.patch<User>(`/api/users/${id}/`, { is_active }),
 
+  destroy: (id: number) => api.delete<void>(`/api/users/${id}/`),
+
   assignRoles: (id: number, data: UserRoleAssignRequest) =>
     api.put<User>(`/api/users/${id}/roles/`, data),
 
