@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Loader2, LogIn } from "lucide-react";
@@ -16,14 +16,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { UserMe } from "@/types/api";
 
 type Phase = "loading" | "success" | "error";
 
 function messageForStatus(status: number, backendMessage?: string): string {
-  if (backendMessage && backendMessage.trim() && !/^\d+$/.test(backendMessage)) {
-    if (!backendMessage.startsWith("خطای ")) {
-      return backendMessage;
-    }
+  if (
+    backendMessage &&
+    backendMessage.trim() &&
+    !/^\d+$/.test(backendMessage) &&
+    !backendMessage.startsWith("خطای ")
+  ) {
+    return backendMessage;
   }
   switch (status) {
     case 400:
@@ -47,6 +51,40 @@ function messageForStatus(status: number, backendMessage?: string): string {
   }
 }
 
+type CachePayload =
+  | {
+      status: "success";
+      access?: string;
+      refresh?: string;
+      user?: UserMe | null;
+      username?: string | null;
+    }
+  | { status: "error"; message: string };
+
+function cacheKey(token: string) {
+  return `medal_invite_consume:${token}`;
+}
+
+function readCache(token: string): CachePayload | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(cacheKey(token));
+    if (!raw) return null;
+    return JSON.parse(raw) as CachePayload;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(token: string, payload: CachePayload) {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(cacheKey(token), JSON.stringify(payload));
+  } catch {
+    // ignore
+  }
+}
+
 export default function ConsumeInvitePage() {
   const params = useParams();
   const router = useRouter();
@@ -64,7 +102,6 @@ export default function ConsumeInvitePage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
-  const started = useRef(false);
 
   useEffect(() => {
     if (!token) {
@@ -72,37 +109,61 @@ export default function ConsumeInvitePage() {
       setErrorMessage("توکن دعوت در آدرس وجود ندارد.");
       return;
     }
-    if (started.current) return;
-    started.current = true;
+
+    const cached = readCache(token);
+    if (cached?.status === "success") {
+      if (cached.access) {
+        setSession(cached.access, cached.refresh ?? "", cached.user ?? null);
+        if (cached.user) setUser(cached.user);
+      }
+      setUsername(cached.username ?? cached.user?.username ?? null);
+      setPhase("success");
+      return;
+    }
+    if (cached?.status === "error") {
+      setErrorMessage(cached.message);
+      setPhase("error");
+      return;
+    }
 
     let cancelled = false;
 
     (async () => {
       try {
         const data = await invitesApi.consume(token);
-        if (cancelled) return;
 
         if (data?.access) {
           setSession(data.access, data.refresh ?? "", data.user ?? null);
           if (data.user) {
             setUser(data.user);
-            setUsername(data.user.username);
           } else {
             try {
               const me = await refreshCurrentUser();
               if (me) setUsername(me.username);
             } catch {
-              // session already stored
+              // ok
             }
           }
         }
 
+        const name = data?.user?.username ?? null;
+        writeCache(token, {
+          status: "success",
+          access: data?.access,
+          refresh: data?.refresh,
+          user: data?.user ?? null,
+          username: name,
+        });
+
+        if (cancelled) return;
+        if (name) setUsername(name);
         setPhase("success");
       } catch (err) {
-        if (cancelled) return;
         const status = err instanceof ApiError ? err.status : 0;
-        const msg = getErrorMessage(err);
-        setErrorMessage(messageForStatus(status, msg));
+        const msg = messageForStatus(status, getErrorMessage(err));
+        writeCache(token, { status: "error", message: msg });
+        if (cancelled) return;
+        setErrorMessage(msg);
         setPhase("error");
       }
     })();
@@ -126,15 +187,13 @@ export default function ConsumeInvitePage() {
 
         <Card>
           {phase === "loading" && (
-            <>
-              <CardHeader className="items-center text-center">
-                <Loader2 className="mb-2 size-10 animate-spin text-primary" />
-                <CardTitle>در حال بررسی دعوت‌نامه…</CardTitle>
-                <CardDescription>
-                  لطفاً صبر کنید تا لینک دعوت تأیید شود.
-                </CardDescription>
-              </CardHeader>
-            </>
+            <CardHeader className="items-center text-center">
+              <Loader2 className="mb-2 size-10 animate-spin text-primary" />
+              <CardTitle>در حال بررسی دعوت‌نامه…</CardTitle>
+              <CardDescription>
+                لطفاً صبر کنید تا لینک دعوت تأیید شود.
+              </CardDescription>
+            </CardHeader>
           )}
 
           {phase === "success" && (
