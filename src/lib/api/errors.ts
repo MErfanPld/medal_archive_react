@@ -19,16 +19,31 @@ export function formatApiErrorMessage(
       return detail.map(String).join(" ");
     }
 
+    // Field errors: { username: ["..."], password: ["..."], non_field_errors: [...] }
+    const fieldLabels: Record<string, string> = {
+      username: "نام کاربری",
+      password: "رمز عبور",
+      email: "ایمیل",
+      role_ids: "نقش‌ها",
+      expires_in_hours: "اعتبار لینک",
+      non_field_errors: "",
+    };
     const parts: string[] = [];
     for (const [key, val] of Object.entries(body)) {
       if (key === "detail") continue;
+      const label = fieldLabels[key] ?? key;
+      let text = "";
       if (Array.isArray(val)) {
-        parts.push(val.map(String).join(" "));
+        text = val.map(String).join(" ");
       } else if (typeof val === "string") {
-        parts.push(val);
+        text = val;
+      } else if (val != null) {
+        text = String(val);
       }
+      if (!text) continue;
+      parts.push(label ? `${label}: ${text}` : text);
     }
-    if (parts.length) return parts.join(" ");
+    if (parts.length) return parts.join(" — ");
   }
 
   if (fallback) return fallback;
