@@ -135,6 +135,16 @@ export async function setUserActive(
   return usersStore[idx];
 }
 
+/** DELETE /api/users/{id}/ */
+export async function deleteUser(id: number): Promise<void> {
+  if (!useMock) {
+    await usersApi.destroy(id);
+    return;
+  }
+  await delay(300);
+  usersStore = usersStore.filter((u) => u.id !== id);
+}
+
 export async function assignUserRoles(
   id: number,
   data: UserRoleAssignRequest
