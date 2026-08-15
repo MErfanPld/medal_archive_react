@@ -3,6 +3,7 @@ import type {
   User,
   PaginatedResponse,
   UserRoleAssignRequest,
+  UserCreateRequest,
   Role,
   Permission,
 } from "@/types/api";
@@ -25,25 +26,12 @@ function toQuery(params?: Record<string, unknown>): string {
   return s ? `?${s}` : "";
 }
 
-/**
- * Users + ACL endpoints (OpenAPI)
- *
- * Users:
- *   GET   /api/users/
- *   GET   /api/users/{id}/
- *   PATCH /api/users/{id}/          (activate / deactivate)
- *   PUT   /api/users/{id}/roles/    (replace roles)
- *
- * Roles:
- *   GET/POST          /api/users/roles/
- *   GET/PUT/PATCH/DEL /api/users/roles/{id}/
- *
- * Permissions:
- *   GET /api/users/permissions/
- */
 export const usersApi = {
   list: (params?: UserListParams) =>
     api.get<PaginatedResponse<User>>(`/api/users/${toQuery(params)}`),
+
+  create: (data: UserCreateRequest) =>
+    api.post<User>("/api/users/", data),
 
   retrieve: (id: number) => api.get<User>(`/api/users/${id}/`),
 
