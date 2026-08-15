@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, LogOut, User as UserIcon, ChevronDown } from "lucide-react";
 import { useAuthStore, logout } from "@/stores/auth-store";
@@ -41,7 +42,7 @@ export function AdminHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-surface/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/80 bg-surface/80 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-surface/70 sm:px-6">
       <button
         type="button"
         className="rounded-md p-2 text-text-muted hover:bg-surface-muted lg:hidden"
@@ -53,21 +54,21 @@ export function AdminHeader({
 
       <div className="min-w-0 flex-1">
         {breadcrumbs && breadcrumbs.length > 0 ? (
-          <nav aria-label="مسیر صفحه" className="flex items-center gap-1 text-sm">
+          <nav aria-label="مسیر صفحه" className="flex items-center gap-1.5 text-sm">
             {breadcrumbs.map((crumb, i) => (
-              <span key={i} className="flex items-center gap-1">
+              <span key={i} className="flex items-center gap-1.5">
                 {i > 0 && (
                   <span className="text-text-subtle" aria-hidden>
                     /
                   </span>
                 )}
                 {crumb.href ? (
-                  <a
+                  <Link
                     href={crumb.href}
-                    className="text-text-muted hover:text-text"
+                    className="text-text-muted transition-colors hover:text-text"
                   >
                     {crumb.label}
-                  </a>
+                  </Link>
                 ) : (
                   <span className="font-medium text-text">{crumb.label}</span>
                 )}
@@ -115,6 +116,15 @@ export function AdminHeader({
                 <p className="text-sm font-medium text-text">{displayName}</p>
                 <p className="text-xs text-text-muted">{roleLabel}</p>
               </div>
+              <Link
+                href="/profile"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface-muted"
+                onClick={() => setMenuOpen(false)}
+              >
+                <UserIcon className="size-4" />
+                پروفایل
+              </Link>
               <button
                 type="button"
                 role="menuitem"
