@@ -1,120 +1,269 @@
 "use client";
 
-import { use } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, User, Shield, Mail, Calendar, CheckCircle, XCircle } from "lucide-react";
-import { getUserById } from "@/lib/data/users";
+import { useParams } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, User as UserIcon, Shield } from "lucide-react";
+import {
+  getUserById,
+  setUserActive,
+  assignUserRoles,
+  getAllRoles,
+} from "@/lib/data/users";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert } from "@/components/ui/alert";
+import { useAuthStore } from "@/stores/auth-store";
+import { PERMISSIONS } from "@/lib/permissions";
+import { useToast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/api/errors";
 
-export default function UserDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ["user", id],
-    queryFn: () => getUserById(Number(id)),
+export default function UserDetailPage() {
+  const params = useParams();
+  const userId = Number(params.id);
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const canManage = hasPermission(PERMISSIONS.USERS_MANAGE);
+  const [selectedRoles, setSelectedRoles] = useState<number[] | null>(null);
+
+  const { data: user, isLoading, isError, refetch } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => getUserById(userId),
+    enabled: Number.isFinite(userId),
   });
+
+  const { data: allRoles = [], isLoading: rolesLoading } = useQuery({
+    queryKey: ["roles", "all"],
+    queryFn: getAllRoles,
+    enabled: canManage,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (is_active: boolean) => setUserActive(userId, is_active),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("وضعیت کاربر به‌روز شد");
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, "خطا در تغییر وضعیت"));
+    },
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: (role_ids: number[]) => assignUserRoles(userId, { role_ids }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setSelectedRoles(null);
+      toast.success("نقش‌های کاربر ذخیره شد");
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, "خطا در ذخیره نقش‌ها"));
+    },
+  });
+
+  const currentRoleIds = useMemo(
+    () => user?.roles?.map((r) => r.id) ?? [],
+    [user]
+  );
+  const editingRoles = selectedRoles ?? currentRoleIds;
+  const rolesDirty =
+    selectedRoles != null &&
+    (selectedRoles.length !== currentRoleIds.length ||
+      selectedRoles.some((id) => !currentRoleIds.includes(id)));
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64" />
+        <Skeleton className="h-48 w-full rounded-xl" />
       </div>
     );
   }
 
-  if (error || !user) {
+  if (isError || !user) {
     return (
-      <div className="text-center py-16">
-        <p className="text-destructive mb-4">کاربر یافت نشد</p>
-        <Button asChild variant="outline">
-          <Link href="/admin/users">بازگشت</Link>
-        </Button>
-      </div>
+      <Alert variant="danger" title="کاربر یافت نشد">
+        کاربر مورد نظر وجود ندارد.{" "}
+        <button type="button" className="underline" onClick={() => refetch()}>
+          تلاش مجدد
+        </button>
+      </Alert>
     );
   }
+
+  const displayName =
+    [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+    user.username;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/users"><ArrowRight className="h-5 w-5" /></Link>
-        </Button>
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xl font-bold">
-            {(user.first_name || user.username || "U")[0]}
-          </div>
+      <div>
+        <Link
+          href="/admin/users"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
+        >
+          <ArrowRight className="size-4" />
+          بازگشت به کاربران
+        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary-deep">
+            <UserIcon className="size-6" />
+          </span>
           <div>
-            <h1 className="text-2xl font-bold">
-              {user.first_name || ""} {user.last_name || ""}
-            </h1>
-            <p className="text-sm text-text-muted">@{user.username}</p>
+            <h1 className="text-xl font-semibold text-text">{displayName}</h1>
+            <p className="text-sm text-text-muted" dir="ltr">
+              @{user.username}
+            </p>
           </div>
+          <Badge variant={user.is_active ? "success" : "danger"}>
+            {user.is_active ? "فعال" : "غیرفعال"}
+          </Badge>
+          {user.is_locked && <Badge variant="warning">قفل‌شده</Badge>}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4" /> اطلاعات حساب
-            </CardTitle>
+            <CardTitle>اطلاعات کاربری</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-4">
               <span className="text-text-muted">ایمیل</span>
-              <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{user.email}</span>
+              <span dir="ltr">{user.email || "—"}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">وضعیت</span>
-              {user.is_active ? (
-                <Badge className="bg-emerald-100 text-emerald-800"><CheckCircle className="h-3 w-3 ml-1" />فعال</Badge>
-              ) : (
-                <Badge variant="secondary"><XCircle className="h-3 w-3 ml-1" />غیرفعال</Badge>
-              )}
-            </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-4">
               <span className="text-text-muted">تاریخ عضویت</span>
-              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{user.date_joined?.slice(0, 10) || "—"}</span>
+              <span>{formatDate(user.date_joined)}</span>
             </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-text-muted">آخرین ورود</span>
+              <span>{formatDate(user.last_login)}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-text-muted">IP آخرین ورود</span>
+              <span dir="ltr">{user.last_login_ip || "—"}</span>
+            </div>
+            {canManage && (
+              <div className="pt-3">
+                <Button
+                  variant={user.is_active ? "outline" : "primary"}
+                  size="sm"
+                  loading={toggleMutation.isPending}
+                  onClick={() => toggleMutation.mutate(!user.is_active)}
+                >
+                  {user.is_active ? "غیرفعال‌سازی" : "فعال‌سازی"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Shield className="h-4 w-4" /> نقش و دسترسی
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="size-4 text-primary" />
+              نقش‌ها و دسترسی
             </CardTitle>
+            <CardDescription>
+              {canManage
+                ? "نقش‌ها با PUT /api/users/{id}/roles/ ذخیره می‌شوند (جایگزینی کامل)."
+                : "فقط مشاهده"}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-text-muted">نقش</span>
-              <Badge>{user.role?.name || "—"}</Badge>
-            </div>
-            <div>
-              <p className="text-text-muted mb-2">دسترسی‌ها</p>
+          <CardContent>
+            {!canManage ? (
               <div className="flex flex-wrap gap-1.5">
-                {(user.role?.permissions || ["view_medals", "view_categories"]).map((p: string) => (
-                  <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
-                ))}
+                {(user.roles?.length ?? 0) > 0 ? (
+                  user.roles!.map((r) => (
+                    <Badge key={r.id} variant="primary">
+                      {r.name}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-text-muted">بدون نقش</span>
+                )}
               </div>
-            </div>
+            ) : rolesLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allRoles.length === 0 ? (
+                  <p className="text-sm text-text-muted">
+                    نقشی از سرور دریافت نشد. ابتدا در بخش نقش‌ها ایجاد کنید.
+                  </p>
+                ) : (
+                  <div className="max-h-80 space-y-2 overflow-y-auto">
+                    {allRoles.map((role) => (
+                      <label
+                        key={role.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 transition-colors hover:bg-surface-muted"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={editingRoles.includes(role.id)}
+                          disabled={roleMutation.isPending}
+                          onChange={() => {
+                            const next = editingRoles.includes(role.id)
+                              ? editingRoles.filter((id) => id !== role.id)
+                              : [...editingRoles, role.id];
+                            setSelectedRoles(next);
+                          }}
+                          className="size-4 rounded border-border"
+                        />
+                        <span className="text-sm font-medium">{role.name}</span>
+                        <span
+                          className="mr-auto font-mono text-xs text-text-subtle"
+                          dir="ltr"
+                        >
+                          {role.codename}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    loading={roleMutation.isPending}
+                    disabled={!rolesDirty || roleMutation.isPending}
+                    onClick={() =>
+                      roleMutation.mutate(selectedRoles ?? currentRoleIds)
+                    }
+                  >
+                    ذخیره نقش‌ها
+                  </Button>
+                  {rolesDirty && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={roleMutation.isPending}
+                      onClick={() => setSelectedRoles(null)}
+                    >
+                      انصراف
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
-
-      <div className="flex gap-2">
-        <Button variant="outline">تغییر نقش</Button>
-        <Button variant={user.is_active ? "destructive" : "default"}>
-          {user.is_active ? "غیرفعال‌سازی" : "فعال‌سازی"}
-        </Button>
       </div>
     </div>
   );
