@@ -1,6 +1,6 @@
 /**
  * Users / Roles / Permissions data layer.
- * Backed by the real API (OpenAPI). Optional mock fallback via NEXT_PUBLIC_USE_MOCK_DATA=1.
+ * Backed by the real API (OpenAPI). Optional mock via NEXT_PUBLIC_USE_MOCK_DATA=1.
  */
 
 import type {
@@ -29,14 +29,26 @@ function delay(ms = 250) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function normalizeList<T>(
+  res: PaginatedResponse<T> | T[]
+): PaginatedResponse<T> {
+  if (Array.isArray(res)) {
+    return { count: res.length, next: null, previous: null, results: res };
+  }
+  return {
+    count: res.count ?? res.results?.length ?? 0,
+    next: res.next ?? null,
+    previous: res.previous ?? null,
+    results: res.results ?? [],
+  };
+}
+
 export async function getUsers(params?: {
   page?: number;
   search?: string;
   is_active?: boolean;
 }): Promise<PaginatedResponse<User>> {
-  if (!useMock) {
-    return usersApi.list(params);
-  }
+  if (!useMock) return usersApi.list(params);
   await delay();
   let list = [...usersStore];
   if (params?.search) {
@@ -79,13 +91,7 @@ export async function setUserActive(
   id: number,
   is_active: boolean
 ): Promise<User | null> {
-  if (!useMock) {
-    try {
-      return await usersApi.setActive(id, is_active);
-    } catch {
-      return null;
-    }
-  }
+  if (!useMock) return await usersApi.setActive(id, is_active);
   await delay(300);
   const idx = usersStore.findIndex((u) => u.id === id);
   if (idx < 0) return null;
@@ -97,13 +103,7 @@ export async function assignUserRoles(
   id: number,
   data: UserRoleAssignRequest
 ): Promise<User | null> {
-  if (!useMock) {
-    try {
-      return await usersApi.assignRoles(id, data);
-    } catch {
-      return null;
-    }
-  }
+  if (!useMock) return await usersApi.assignRoles(id, data);
   await delay(350);
   const idx = usersStore.findIndex((u) => u.id === id);
   if (idx < 0) return null;
@@ -116,7 +116,7 @@ export async function assignUserRoles(
 
 export async function getRoles(page = 1): Promise<PaginatedResponse<Role>> {
   if (!useMock) {
-    return usersApi.listRoles(page);
+    return normalizeList(await usersApi.listRoles({ page, page_size: 100 }));
   }
   await delay();
   const pageSize = 20;
@@ -127,6 +127,25 @@ export async function getRoles(page = 1): Promise<PaginatedResponse<Role>> {
     previous: null,
     results: rolesStore.slice(start, start + pageSize),
   };
+}
+
+export async function getAllRoles(): Promise<Role[]> {
+  if (useMock) {
+    await delay();
+    return [...rolesStore];
+  }
+  const all: Role[] = [];
+  let page = 1;
+  for (;;) {
+    const res = normalizeList(
+      await usersApi.listRoles({ page, page_size: 100 })
+    );
+    all.push(...res.results);
+    if (!res.next || res.results.length === 0) break;
+    page += 1;
+    if (page > 50) break;
+  }
+  return all;
 }
 
 export async function getRoleById(id: number): Promise<Role | null> {
@@ -148,9 +167,7 @@ export async function createRole(data: {
   is_active?: boolean;
   permission_ids?: number[];
 }): Promise<Role> {
-  if (!useMock) {
-    return usersApi.createRole(data);
-  }
+  if (!useMock) return usersApi.createRole(data);
   await delay(350);
   const permissions = MOCK_PERMISSIONS.filter((p) =>
     (data.permission_ids ?? []).includes(p.id)
@@ -176,26 +193,22 @@ export async function updateRole(
     is_active?: boolean;
     permission_ids?: number[];
   }
-): Promise<Role | null> {
+): Promise<Role> {
   if (!useMock) {
-    try {
-      if (data.name != null && data.codename != null) {
-        return await usersApi.updateRole(id, {
-          name: data.name,
-          codename: data.codename,
-          description: data.description,
-          is_active: data.is_active,
-          permission_ids: data.permission_ids,
-        });
-      }
-      return await usersApi.partialUpdateRole(id, data as Record<string, unknown>);
-    } catch {
-      return null;
+    if (data.name != null && data.codename != null) {
+      return await usersApi.updateRole(id, {
+        name: data.name,
+        codename: data.codename,
+        description: data.description,
+        is_active: data.is_active,
+        permission_ids: data.permission_ids,
+      });
     }
+    return await usersApi.partialUpdateRole(id, data as Record<string, unknown>);
   }
   await delay(350);
   const idx = rolesStore.findIndex((r) => r.id === id);
-  if (idx < 0) return null;
+  if (idx < 0) throw new Error("نقش یافت نشد");
   const permissions =
     data.permission_ids != null
       ? MOCK_PERMISSIONS.filter((p) => data.permission_ids!.includes(p.id))
@@ -204,26 +217,30 @@ export async function updateRole(
   return rolesStore[idx];
 }
 
-export async function deleteRole(id: number): Promise<boolean> {
+export async function deleteRole(id: number): Promise<void> {
   if (!useMock) {
-    try {
-      await usersApi.destroyRole(id);
-      return true;
-    } catch {
-      return false;
-    }
+    await usersApi.destroyRole(id);
+    return;
   }
   await delay(300);
-  const before = rolesStore.length;
   rolesStore = rolesStore.filter((r) => r.id !== id);
-  return rolesStore.length < before;
 }
 
 export async function getPermissions(): Promise<Permission[]> {
-  if (!useMock) {
-    const res = await usersApi.listPermissions();
-    return res.results ?? [];
+  if (useMock) {
+    await delay();
+    return MOCK_PERMISSIONS;
   }
-  await delay();
-  return MOCK_PERMISSIONS;
+  const all: Permission[] = [];
+  let page = 1;
+  for (;;) {
+    const res = normalizeList(
+      await usersApi.listPermissions({ page, page_size: 200 })
+    );
+    all.push(...res.results);
+    if (!res.next || res.results.length === 0) break;
+    page += 1;
+    if (page > 50) break;
+  }
+  return all;
 }
