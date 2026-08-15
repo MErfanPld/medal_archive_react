@@ -1,10 +1,6 @@
 import { ApiError } from "./client";
 import type { ApiErrorBody } from "@/types/api";
 
-/**
- * Extract a human-readable message from Django REST Framework error bodies.
- * Prefers backend text over generic fallbacks.
- */
 export function formatApiErrorMessage(
   status: number,
   body: ApiErrorBody | null | undefined,
@@ -19,7 +15,6 @@ export function formatApiErrorMessage(
       return detail.map(String).join(" ");
     }
 
-    // Field errors: { username: ["..."], password: ["..."], non_field_errors: [...] }
     const fieldLabels: Record<string, string> = {
       username: "نام کاربری",
       password: "رمز عبور",
@@ -41,6 +36,13 @@ export function formatApiErrorMessage(
         text = String(val);
       }
       if (!text) continue;
+      if (
+        key === "username" &&
+        /already|exists|taken|استفاده شده|موجود/i.test(text)
+      ) {
+        text =
+          "این نام کاربری قبلاً ثبت شده است. برای دعوت، نام کاربری جدید انتخاب کنید.";
+      }
       parts.push(label ? `${label}: ${text}` : text);
     }
     if (parts.length) return parts.join(" — ");
