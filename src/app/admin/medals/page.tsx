@@ -213,7 +213,7 @@ export default function MedalsPage() {
                       <Link href={`/admin/medals/${m.id}`}>مشاهده</Link>
                     </Button>
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`/admin/medals/${m.id}/edit">ویرایش</Link>
+                      <Link href={`/admin/medals/${m.id}/edit`}>ویرایش</Link>
                     </Button>
                   </div>
                 </CardContent>
