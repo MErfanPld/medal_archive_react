@@ -5,8 +5,12 @@
 
 import type { ApiErrorBody } from "@/types/api";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+/**
+ * API origin.
+ * - Empty / unset → same-origin `/api/...` via Next.js rewrite → Django (no CORS in dev).
+ * - Full URL (NEXT_PUBLIC_API_URL) → direct calls (backend must allow CORS).
+ */
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 export class ApiError extends Error {
   status: number;
@@ -109,14 +113,25 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const bodyObj = (data as ApiErrorBody) || null;
-    const message =
-      bodyObj?.detail ||
-      (typeof bodyObj === "object" && bodyObj !== null
-        ? JSON.stringify(bodyObj)
-        : `خطای ${response.status}`);
+    let message = `خطای ${response.status}`;
+    if (bodyObj && typeof bodyObj === "object") {
+      if (typeof bodyObj.detail === "string" && bodyObj.detail.trim()) {
+        message = bodyObj.detail;
+      } else if (Array.isArray(bodyObj.detail)) {
+        message = bodyObj.detail.map(String).join(" ");
+      } else {
+        const fieldMsgs: string[] = [];
+        for (const [k, v] of Object.entries(bodyObj)) {
+          if (k === "detail") continue;
+          if (Array.isArray(v)) fieldMsgs.push(v.map(String).join(" "));
+          else if (typeof v === "string") fieldMsgs.push(v);
+        }
+        if (fieldMsgs.length) message = fieldMsgs.join(" ");
+      }
+    }
 
-    // 401 → clear session so protected routes can redirect
-    if (response.status === 401) {
+    // 401 on authenticated calls → clear session (not on login/skipAuth)
+    if (response.status === 401 && !skipAuth) {
       clearTokens();
     }
 
