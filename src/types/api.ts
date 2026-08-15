@@ -24,7 +24,7 @@ export interface LogoutRequest {
 export interface TokenPairResponse {
   access: string;
   refresh: string;
-  user: UserMe;
+  user?: UserMe;
 }
 
 export interface MessageResponse {
@@ -86,6 +86,18 @@ export interface UserRoleAssignRequest {
   role_ids: number[];
 }
 
+/** POST /api/users/ — create user (admin) */
+export interface UserCreateRequest {
+  username: string;
+  password: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  is_active?: boolean;
+  role_ids?: number[];
+}
+
+/** POST /api/users/invite/ */
 export interface InviteLinkCreateRequest {
   username: string;
   password: string;
@@ -95,12 +107,14 @@ export interface InviteLinkCreateRequest {
 }
 
 export interface InviteLinkCreateResponse {
-  user: User;
+  user?: User;
   invite_url: string;
   token: string;
-  expires_at: string;
-  warning: string;
+  expires_at?: string;
+  warning?: string;
 }
+
+export type InviteConsumeResponse = TokenPairResponse;
 
 // ---------- Category ----------
 export interface Category {
@@ -236,7 +250,6 @@ export interface MedalRequest {
   notes?: string;
 }
 
-// ---------- Nested resources ----------
 export interface MedalImage {
   id: number;
   image: string;
@@ -287,7 +300,6 @@ export interface MedalValuationRecord {
   created_by: number | null;
 }
 
-// ---------- Museum (rich read-only) ----------
 export interface MuseumMedal {
   id: number;
   name: string;
@@ -329,7 +341,6 @@ export interface MuseumMedal {
   updated_at: string;
 }
 
-// ---------- Reports ----------
 export interface DashboardSummary {
   total_medals: number;
   countries: number;
@@ -362,7 +373,6 @@ export interface PurchaseReport {
   note: string;
 }
 
-// ---------- API Error shape ----------
 export interface ApiErrorBody {
   detail?: string;
   [key: string]: unknown;
