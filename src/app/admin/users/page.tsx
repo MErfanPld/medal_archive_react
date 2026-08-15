@@ -6,14 +6,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
   User as UserIcon,
+  Eye,
   UserPlus,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
-import { getUsers, setUserActive } from "@/lib/data/users";
+import { getUsers, setUserActive, deleteUser } from "@/lib/data/users";
 import { formatDate, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Alert } from "@/components/ui/alert";
@@ -21,6 +24,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/api/errors";
 import { useAuthStore } from "@/stores/auth-store";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -30,6 +34,7 @@ export default function UsersPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const currentUserId = useAuthStore((s) => s.user?.id);
   const canManage = hasPermission(PERMISSIONS.USERS_MANAGE);
   const canView = hasPermission(PERMISSIONS.USERS_VIEW) || canManage;
 
@@ -40,6 +45,10 @@ export default function UsersPage() {
   const [toggleTarget, setToggleTarget] = useState<{
     id: number;
     is_active: boolean;
+    name: string;
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
     name: string;
   } | null>(null);
 
@@ -71,6 +80,18 @@ export default function UsersPage() {
       toast.error(
         err instanceof ApiError ? err.message : "خطا در تغییر وضعیت کاربر"
       );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setDeleteTarget(null);
+      toast.success("کاربر حذف شد");
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, "خطا در حذف کاربر"));
     },
   });
 
@@ -188,14 +209,14 @@ export default function UsersPage() {
         />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-surface md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-muted/50 text-right text-text-muted">
                   <th className="px-4 py-3 font-medium">کاربر</th>
-                  <th className="hidden px-4 py-3 font-medium sm:table-cell">نقش</th>
+                  <th className="px-4 py-3 font-medium">نقش</th>
                   <th className="px-4 py-3 font-medium">وضعیت</th>
-                  <th className="hidden px-4 py-3 font-medium md:table-cell">آخرین ورود</th>
+                  <th className="px-4 py-3 font-medium">عضویت</th>
                   <th className="px-4 py-3 font-medium">عملیات</th>
                 </tr>
               </thead>
@@ -220,7 +241,7 @@ export default function UsersPage() {
                           {u.username}
                         </p>
                       </td>
-                      <td className="hidden px-4 py-3 text-text-muted sm:table-cell">
+                      <td className="px-4 py-3 text-text-muted">
                         {u.roles?.map((r) => r.name).join("، ") || "—"}
                       </td>
                       <td className="px-4 py-3">
@@ -228,28 +249,51 @@ export default function UsersPage() {
                           {u.is_active ? "فعال" : "غیرفعال"}
                         </Badge>
                       </td>
-                      <td className="hidden px-4 py-3 text-text-muted md:table-cell">
-                        {formatDate(u.last_login)}
+                      <td className="px-4 py-3 text-text-muted">
+                        {formatDate(u.date_joined)}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/admin/users/${u.id}`}>جزئیات</Link>
-                          </Button>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Link
+                            href={`/admin/users/${u.id}`}
+                            className="rounded-md p-1.5 text-text-muted hover:bg-surface-muted hover:text-text"
+                            aria-label="مشاهده"
+                          >
+                            <Eye className="size-4" />
+                          </Link>
                           {canManage && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setToggleTarget({
-                                  id: u.id,
-                                  is_active: u.is_active,
-                                  name,
-                                })
-                              }
-                            >
-                              {u.is_active ? "غیرفعال" : "فعال"}
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setToggleTarget({
+                                    id: u.id,
+                                    is_active: u.is_active,
+                                    name,
+                                  })
+                                }
+                              >
+                                {u.is_active ? "غیرفعال" : "فعال"}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-danger hover:bg-danger/10 hover:text-danger"
+                                disabled={u.id === currentUserId}
+                                title={
+                                  u.id === currentUserId
+                                    ? "نمی‌توانید خودتان را حذف کنید"
+                                    : "حذف کاربر"
+                                }
+                                onClick={() =>
+                                  setDeleteTarget({ id: u.id, name })
+                                }
+                              >
+                                <Trash2 className="size-4" />
+                                حذف
+                              </Button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -259,6 +303,53 @@ export default function UsersPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="space-y-3 md:hidden">
+            {users.map((u) => {
+              const name =
+                [u.first_name, u.last_name].filter(Boolean).join(" ") ||
+                u.username;
+              return (
+                <Card key={u.id}>
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <Link
+                          href={`/admin/users/${u.id}`}
+                          className="font-medium hover:text-primary"
+                        >
+                          {name}
+                        </Link>
+                        <p className="text-xs text-text-subtle" dir="ltr">
+                          @{u.username}
+                        </p>
+                      </div>
+                      <Badge variant={u.is_active ? "success" : "danger"}>
+                        {u.is_active ? "فعال" : "غیرفعال"}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/users/${u.id}`}>جزئیات</Link>
+                      </Button>
+                      {canManage && u.id !== currentUserId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-danger hover:bg-danger/10 hover:text-danger"
+                          onClick={() => setDeleteTarget({ id: u.id, name })}
+                        >
+                          <Trash2 className="size-4" />
+                          حذف
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
           <Pagination
             page={page}
             pageSize={20}
@@ -271,15 +362,6 @@ export default function UsersPage() {
       <ConfirmDialog
         open={toggleTarget != null}
         onClose={() => setToggleTarget(null)}
-        title={toggleTarget?.is_active ? "غیرفعال‌سازی کاربر" : "فعال‌سازی کاربر"}
-        description={
-          toggleTarget
-            ? `آیا از ${toggleTarget.is_active ? "غیرفعال" : "فعال"} کردن «${toggleTarget.name}» مطمئن هستید؟`
-            : ""
-        }
-        confirmLabel={toggleTarget?.is_active ? "غیرفعال کن" : "فعال کن"}
-        variant={toggleTarget?.is_active ? "danger" : "primary"}
-        loading={toggleMutation.isPending}
         onConfirm={() => {
           if (!toggleTarget) return;
           toggleMutation.mutate({
@@ -287,6 +369,35 @@ export default function UsersPage() {
             is_active: !toggleTarget.is_active,
           });
         }}
+        title={
+          toggleTarget?.is_active ? "غیرفعال‌سازی کاربر" : "فعال‌سازی کاربر"
+        }
+        description={
+          toggleTarget?.is_active
+            ? `آیا از غیرفعال کردن «${toggleTarget.name}» اطمینان دارید؟`
+            : `آیا می‌خواهید «${toggleTarget?.name}» را فعال کنید؟`
+        }
+        confirmLabel={toggleTarget?.is_active ? "غیرفعال کردن" : "فعال کردن"}
+        loading={toggleMutation.isPending}
+        variant={toggleTarget?.is_active ? "danger" : "primary"}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget != null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteMutation.mutate(deleteTarget.id);
+        }}
+        title="حذف کاربر"
+        description={
+          deleteTarget
+            ? `آیا از حذف دائمی «${deleteTarget.name}» مطمئن هستید؟ این عمل قابل بازگشت نیست.`
+            : ""
+        }
+        confirmLabel="حذف کاربر"
+        loading={deleteMutation.isPending}
+        variant="danger"
       />
     </div>
   );
