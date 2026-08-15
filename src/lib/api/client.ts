@@ -123,10 +123,15 @@ async function request<T = unknown>(
         const fieldMsgs: string[] = [];
         for (const [k, v] of Object.entries(bodyObj)) {
           if (k === "detail") continue;
-          if (Array.isArray(v)) fieldMsgs.push(v.map(String).join(" "));
-          else if (typeof v === "string") fieldMsgs.push(v);
+          const text = Array.isArray(v)
+            ? v.map(String).join(" ")
+            : typeof v === "string"
+              ? v
+              : "";
+          if (!text) continue;
+          fieldMsgs.push(`${k}: ${text}`);
         }
-        if (fieldMsgs.length) message = fieldMsgs.join(" ");
+        if (fieldMsgs.length) message = fieldMsgs.join(" — ");
       }
     }
 
