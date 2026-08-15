@@ -9,6 +9,7 @@ import type {
   Permission,
   PaginatedResponse,
   UserRoleAssignRequest,
+  UserCreateRequest,
 } from "@/types/api";
 import { usersApi } from "@/lib/api/users";
 import {
@@ -85,6 +86,41 @@ export async function getUserById(id: number): Promise<User | null> {
   }
   await delay();
   return usersStore.find((u) => u.id === id) ?? null;
+}
+
+export async function createUser(data: UserCreateRequest): Promise<User> {
+  if (!useMock) {
+    const { role_ids, ...payload } = data;
+    const user = await usersApi.create(payload);
+    if (role_ids && role_ids.length > 0) {
+      try {
+        return (await usersApi.assignRoles(user.id, { role_ids })) ?? user;
+      } catch {
+        return user;
+      }
+    }
+    return user;
+  }
+  await delay(350);
+  const roles = rolesStore
+    .filter((r) => (data.role_ids ?? []).includes(r.id))
+    .map((r) => ({ id: r.id, name: r.name, codename: r.codename }));
+  const user: User = {
+    id: Math.max(0, ...usersStore.map((u) => u.id)) + 1,
+    username: data.username,
+    email: data.email ?? null,
+    first_name: data.first_name ?? "",
+    last_name: data.last_name ?? "",
+    roles,
+    is_active: data.is_active ?? true,
+    is_locked: false,
+    must_change_password: false,
+    date_joined: new Date().toISOString(),
+    last_login: null,
+    last_login_ip: null,
+  };
+  usersStore = [user, ...usersStore];
+  return user;
 }
 
 export async function setUserActive(
