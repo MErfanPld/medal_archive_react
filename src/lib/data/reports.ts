@@ -1,42 +1,53 @@
+/**
+ * Reports data layer — real API only.
+ */
+
 import type {
   DashboardSummary,
   CountryReport,
   ValueReport,
   PurchaseReport,
 } from "@/types/api";
-import {
-  MOCK_DASHBOARD,
-  MOCK_COUNTRY_REPORT,
-  MOCK_VALUE_REPORT,
-  MOCK_PURCHASE_REPORT,
-  MOCK_NOTIFICATIONS,
-} from "@/data/mock/dashboard";
-
-function delay(ms = 300) {
-  return new Promise((r) => setTimeout(r, ms));
-}
+import { reportsApi, type PdfReportType } from "@/lib/api/reports";
 
 export async function getDashboard(): Promise<DashboardSummary> {
-  await delay();
-  return MOCK_DASHBOARD;
+  try {
+    return await reportsApi.dashboard();
+  } catch {
+    return reportsApi.summary();
+  }
 }
 
-export async function getCountryReport(): Promise<CountryReport> {
-  await delay();
-  return MOCK_COUNTRY_REPORT;
+export async function getCountryReport(
+  limit?: number
+): Promise<CountryReport> {
+  return reportsApi.countries(limit);
 }
 
 export async function getValueReport(): Promise<ValueReport> {
-  await delay();
-  return MOCK_VALUE_REPORT;
+  return reportsApi.value();
 }
 
 export async function getPurchaseReport(): Promise<PurchaseReport> {
-  await delay();
-  return MOCK_PURCHASE_REPORT;
+  return reportsApi.purchases();
 }
 
-export async function getNotifications() {
-  await delay(150);
-  return MOCK_NOTIFICATIONS;
+export async function downloadReportPdf(type: PdfReportType): Promise<Blob> {
+  return reportsApi.downloadPdf(type);
+}
+
+/** Trigger browser download for a report PDF. */
+export async function saveReportPdf(
+  type: PdfReportType,
+  filename?: string
+): Promise<void> {
+  const blob = await downloadReportPdf(type);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename ?? `report-${type}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
