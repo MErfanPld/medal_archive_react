@@ -1,9 +1,7 @@
 /**
  * Core API types derived from Medal Archive API OpenAPI 3.0.3
- * Do not invent fields — only what the backend provides.
  */
 
-// ---------- Pagination ----------
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
@@ -11,7 +9,6 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-// ---------- Auth ----------
 export interface LoginRequest {
   username: string;
   password: string;
@@ -31,7 +28,6 @@ export interface MessageResponse {
   detail: string;
 }
 
-// ---------- User & RBAC ----------
 export interface RoleMini {
   id: number;
   name: string;
@@ -86,7 +82,6 @@ export interface UserRoleAssignRequest {
   role_ids: number[];
 }
 
-/** POST /api/users/ — create user (admin) */
 export interface UserCreateRequest {
   username: string;
   password: string;
@@ -97,7 +92,6 @@ export interface UserCreateRequest {
   role_ids?: number[];
 }
 
-/** POST /api/users/invite/ */
 export interface InviteLinkCreateRequest {
   username: string;
   password: string;
@@ -116,7 +110,6 @@ export interface InviteLinkCreateResponse {
 
 export type InviteConsumeResponse = TokenPairResponse;
 
-// ---------- Category ----------
 export interface Category {
   id: number;
   name: string;
@@ -134,7 +127,6 @@ export interface CategoryRequest {
   is_active?: boolean;
 }
 
-// ---------- Medal enums ----------
 export type Authenticity =
   | "authentic"
   | "suspect"
@@ -177,7 +169,6 @@ export type ImageType =
 
 export type FileType = "certificate" | "invoice" | "document" | "other";
 
-// ---------- Medal ----------
 export interface Medal {
   id: number;
   name: string;
@@ -371,6 +362,140 @@ export interface PurchaseReport {
   by_seller: unknown[];
   by_country: unknown[];
   note: string;
+}
+
+export type CoinItemType =
+  | "coin"
+  | "banknote"
+  | "token"
+  | "bullion"
+  | "other";
+
+export interface Coin {
+  id: number;
+  name: string;
+  item_type: CoinItemType;
+  item_type_display?: string;
+  category_id?: number | null;
+  category_name?: string;
+  category_detail?: Category | null;
+  country?: string;
+  year?: number | null;
+  year_hijri?: number | null;
+  historical_period?: string;
+  reign_or_ruler?: string;
+  face_value?: string | null;
+  denomination?: string;
+  currency_name?: string;
+  material?: string;
+  purity?: string | null;
+  weight?: string | null;
+  diameter?: string | null;
+  thickness?: string | null;
+  shape?: string;
+  edge?: string;
+  color?: string;
+  serial_number?: string;
+  series?: string;
+  signature?: string;
+  printer?: string;
+  mint?: string;
+  maker?: string;
+  mintage?: number | null;
+  catalog_number?: string;
+  quality?: Quality;
+  quality_display?: string;
+  preservation_condition?: string;
+  authenticity?: Authenticity;
+  authenticity_display?: string;
+  is_proof?: boolean;
+  is_commemorative?: boolean;
+  purchase_date?: string | null;
+  purchase_location?: string;
+  seller?: string;
+  purchase_price?: string | null;
+  purchase_currency?: Currency;
+  current_value?: string | null;
+  last_valuation_date?: string | null;
+  cabinet_number?: string;
+  drawer_number?: string;
+  box_number?: string;
+  notes?: string;
+  is_active?: boolean;
+  primary_image?: string | null;
+  primary_image_url?: string | null;
+  images_count?: string | number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CoinRequest {
+  name: string;
+  item_type: CoinItemType;
+  category_id?: number | null;
+  country?: string;
+  year?: number | null;
+  year_hijri?: number | null;
+  historical_period?: string;
+  reign_or_ruler?: string;
+  face_value?: string | null;
+  denomination?: string;
+  currency_name?: string;
+  material?: string;
+  purity?: string | null;
+  weight?: string | null;
+  diameter?: string | null;
+  thickness?: string | null;
+  shape?: string;
+  edge?: string;
+  color?: string;
+  serial_number?: string;
+  series?: string;
+  signature?: string;
+  printer?: string;
+  mint?: string;
+  maker?: string;
+  mintage?: number | null;
+  catalog_number?: string;
+  quality?: Quality;
+  preservation_condition?: string;
+  authenticity?: Authenticity;
+  is_proof?: boolean;
+  is_commemorative?: boolean;
+  purchase_date?: string | null;
+  purchase_location?: string;
+  seller?: string;
+  purchase_price?: string | null;
+  purchase_currency?: Currency;
+  current_value?: string | null;
+  last_valuation_date?: string | null;
+  cabinet_number?: string;
+  drawer_number?: string;
+  box_number?: string;
+  notes?: string;
+  is_active?: boolean;
+}
+
+export type CoinImageType =
+  | "front"
+  | "back"
+  | "edge"
+  | "detail"
+  | "certificate"
+  | "other";
+
+export interface CoinImage {
+  id: number;
+  image: string;
+  image_url: string;
+  image_type?: CoinImageType;
+  caption?: string;
+  ordering?: number;
+  is_primary?: boolean;
+  original_filename: string;
+  file_size: number | null;
+  uploaded_by: number | null;
+  uploaded_at: string;
 }
 
 export interface ApiErrorBody {
