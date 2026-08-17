@@ -6,6 +6,8 @@ import type {
   Coin,
   CoinRequest,
   CoinImage,
+  CoinPurchaseRecord,
+  CoinValuationRecord,
   PaginatedResponse,
 } from "@/types/api";
 import { coinsApi, type CoinListParams } from "@/lib/api/coins";
@@ -65,4 +67,56 @@ export async function deleteCoinImage(
 ): Promise<boolean> {
   await coinsApi.destroyImage(coinPk, id);
   return true;
+}
+
+export async function getCoinPurchases(
+  coinId: number
+): Promise<CoinPurchaseRecord[]> {
+  const res = await coinsApi.listPurchases(coinId);
+  return res.results ?? [];
+}
+
+export async function createCoinPurchase(
+  coinId: number,
+  data: Partial<CoinPurchaseRecord>
+): Promise<CoinPurchaseRecord> {
+  return coinsApi.createPurchase(coinId, data);
+}
+
+export async function deleteCoinPurchase(
+  coinId: number,
+  purchaseId: number
+): Promise<boolean> {
+  try {
+    await coinsApi.destroyPurchase(coinId, purchaseId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getCoinValuations(
+  coinId: number
+): Promise<CoinValuationRecord[]> {
+  const res = await coinsApi.listValuations(coinId);
+  return res.results ?? [];
+}
+
+export async function createCoinValuation(
+  coinId: number,
+  data: Partial<CoinValuationRecord>
+): Promise<CoinValuationRecord> {
+  return coinsApi.createValuation(coinId, data);
+}
+
+export async function deleteCoinValuation(
+  coinId: number,
+  valuationId: number
+): Promise<boolean> {
+  try {
+    await coinsApi.destroyValuation(coinId, valuationId);
+    return true;
+  } catch {
+    return false;
+  }
 }

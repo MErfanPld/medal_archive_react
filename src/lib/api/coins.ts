@@ -3,6 +3,8 @@ import type {
   Coin,
   CoinRequest,
   CoinImage,
+  CoinPurchaseRecord,
+  CoinValuationRecord,
   PaginatedResponse,
 } from "@/types/api";
 
@@ -76,7 +78,7 @@ export const coinsApi = {
     api.get<CoinImage>(`/api/coins/${coinPk}/images/${id}/`),
 
   createImage: (coinPk: number, formData: FormData) =>
-    api.post<CoinImage>(`/api/coins/${coinPk}/images/`, formData),
+    api.postForm<CoinImage>(`/api/coins/${coinPk}/images/`, formData),
 
   updateImage: (coinPk: number, id: number, formData: FormData) =>
     api.put<CoinImage>(`/api/coins/${coinPk}/images/${id}/`, formData),
@@ -89,4 +91,32 @@ export const coinsApi = {
 
   destroyImage: (coinPk: number, id: number) =>
     api.delete<void>(`/api/coins/${coinPk}/images/${id}/`),
+
+  listPurchases: (coinPk: number, page?: number) =>
+    api.get<PaginatedResponse<CoinPurchaseRecord>>(
+      `/api/coins/${coinPk}/purchases/${toQuery(page != null ? { page } : undefined)}`
+    ),
+
+  retrievePurchase: (coinPk: number, id: number) =>
+    api.get<CoinPurchaseRecord>(`/api/coins/${coinPk}/purchases/${id}/`),
+
+  createPurchase: (coinPk: number, data: Partial<CoinPurchaseRecord>) =>
+    api.post<CoinPurchaseRecord>(`/api/coins/${coinPk}/purchases/`, data),
+
+  destroyPurchase: (coinPk: number, id: number) =>
+    api.delete<void>(`/api/coins/${coinPk}/purchases/${id}/`),
+
+  listValuations: (coinPk: number, page?: number) =>
+    api.get<PaginatedResponse<CoinValuationRecord>>(
+      `/api/coins/${coinPk}/valuations/${toQuery(page != null ? { page } : undefined)}`
+    ),
+
+  retrieveValuation: (coinPk: number, id: number) =>
+    api.get<CoinValuationRecord>(`/api/coins/${coinPk}/valuations/${id}/`),
+
+  createValuation: (coinPk: number, data: Partial<CoinValuationRecord>) =>
+    api.post<CoinValuationRecord>(`/api/coins/${coinPk}/valuations/`, data),
+
+  destroyValuation: (coinPk: number, id: number) =>
+    api.delete<void>(`/api/coins/${coinPk}/valuations/${id}/`),
 };
