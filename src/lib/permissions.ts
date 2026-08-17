@@ -14,6 +14,10 @@ export const PERMISSIONS = {
   MEDALS_CREATE: "medals.create",
   MEDALS_UPDATE: "medals.update",
   MEDALS_DELETE: "medals.delete",
+  COINS_VIEW: "coins.view",
+  COINS_CREATE: "coins.create",
+  COINS_UPDATE: "coins.update",
+  COINS_DELETE: "coins.delete",
   REPORTS_VIEW: "reports.view",
   USERS_VIEW: "users.view",
   USERS_MANAGE: "users.manage",
@@ -41,11 +45,16 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.MEDALS_CREATE,
     PERMISSIONS.MEDALS_UPDATE,
     PERMISSIONS.MEDALS_DELETE,
+    PERMISSIONS.COINS_VIEW,
+    PERMISSIONS.COINS_CREATE,
+    PERMISSIONS.COINS_UPDATE,
+    PERMISSIONS.COINS_DELETE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   viewer: new Set([
     PERMISSIONS.CATEGORIES_VIEW,
     PERMISSIONS.MEDALS_VIEW,
+    PERMISSIONS.COINS_VIEW,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   editor: new Set([
@@ -55,6 +64,9 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.MEDALS_VIEW,
     PERMISSIONS.MEDALS_CREATE,
     PERMISSIONS.MEDALS_UPDATE,
+    PERMISSIONS.COINS_VIEW,
+    PERMISSIONS.COINS_CREATE,
+    PERMISSIONS.COINS_UPDATE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
 };
@@ -118,6 +130,9 @@ export function can(
 
 export function canViewMedals(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.MEDALS_VIEW);
+}
+export function canViewCoins(user: UserMe | null | undefined) {
+  return hasPermission(user, PERMISSIONS.COINS_VIEW);
 }
 export function canViewCategories(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.CATEGORIES_VIEW);
