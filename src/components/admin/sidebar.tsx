@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Medal,
+  Coins,
   FolderOpen,
   Users,
   Shield,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore, logout } from "@/stores/auth-store";
 import {
   canViewMedals,
+  canViewCoins,
   canViewCategories,
   canViewReports,
   canViewUsers,
@@ -59,6 +61,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "مجموعه",
     items: [
       { href: "/admin/medals", label: "مدال‌ها", icon: Medal, visible: (u) => canViewMedals(u) },
+      { href: "/admin/coins", label: "سکه و پول", icon: Coins, visible: (u) => canViewCoins(u) },
       { href: "/admin/categories", label: "دسته‌بندی‌ها", icon: FolderOpen, visible: (u) => canViewCategories(u) },
     ],
   },
