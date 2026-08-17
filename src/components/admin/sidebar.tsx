@@ -71,6 +71,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/museum", label: "نمای عمومی", icon: Landmark, visible: () => true },
       { href: "/museum/medals", label: "گالری مدال‌ها", icon: ImageIcon, visible: () => true },
+      { href: "/museum/coins", label: "گالری سکه و پول", icon: Coins, visible: () => true },
     ],
   },
   {
