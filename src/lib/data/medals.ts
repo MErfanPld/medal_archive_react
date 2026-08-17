@@ -287,3 +287,62 @@ export async function getMedalValuations(medalId: number): Promise<MedalValuatio
   await delay();
   return MOCK_VALUATIONS[medalId] ?? [];
 }
+
+export async function createMedalPurchase(
+  medalId: number,
+  data: Partial<MedalPurchaseRecord>
+): Promise<MedalPurchaseRecord> {
+  if (!useMock) return medalsApi.createPurchase(medalId, data);
+  await delay(300);
+  return {
+    id: Date.now(),
+    purchase_date: data.purchase_date ?? null,
+    location: data.location ?? "",
+    seller: data.seller ?? "",
+    price: data.price ?? null,
+    currency: data.currency,
+    notes: data.notes ?? "",
+    created_at: new Date().toISOString(),
+    created_by: null,
+  };
+}
+
+export async function deleteMedalPurchase(
+  medalId: number,
+  purchaseId: number
+): Promise<boolean> {
+  if (!useMock) {
+    try { await medalsApi.destroyPurchase(medalId, purchaseId); return true; } catch { return false; }
+  }
+  await delay(200);
+  return true;
+}
+
+export async function createMedalValuation(
+  medalId: number,
+  data: Partial<MedalValuationRecord>
+): Promise<MedalValuationRecord> {
+  if (!useMock) return medalsApi.createValuation(medalId, data);
+  await delay(300);
+  return {
+    id: Date.now(),
+    value: data.value ?? "0",
+    currency: data.currency,
+    valuation_date: data.valuation_date ?? new Date().toISOString().slice(0, 10),
+    source: data.source ?? "",
+    notes: data.notes ?? "",
+    created_at: new Date().toISOString(),
+    created_by: null,
+  };
+}
+
+export async function deleteMedalValuation(
+  medalId: number,
+  valuationId: number
+): Promise<boolean> {
+  if (!useMock) {
+    try { await medalsApi.destroyValuation(medalId, valuationId); return true; } catch { return false; }
+  }
+  await delay(200);
+  return true;
+}
