@@ -77,7 +77,13 @@ export const medalsApi = {
     api.postForm<MedalImage>(`/api/medals/${medalPk}/images/`, formData),
 
   updateImage: (medalPk: number, id: number, formData: FormData) =>
-    api.postForm<MedalImage>(`/api/medals/${medalPk}/images/${id}/`, formData),
+    api.put<MedalImage>(`/api/medals/${medalPk}/images/${id}/`, formData),
+
+  partialUpdateImage: (
+    medalPk: number,
+    id: number,
+    data: FormData | Record<string, unknown>
+  ) => api.patch<MedalImage>(`/api/medals/${medalPk}/images/${id}/`, data),
 
   destroyImage: (medalPk: number, id: number) =>
     api.delete<void>(`/api/medals/${medalPk}/images/${id}/`),
