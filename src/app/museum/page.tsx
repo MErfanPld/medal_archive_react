@@ -2,67 +2,18 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Coins, Medal, Landmark } from "lucide-react";
+import { ArrowLeft, Coins, Medal, Sparkles } from "lucide-react";
 import { getMedals } from "@/lib/data/medals";
 import { getCoins } from "@/lib/data/coins";
 import { getCategories } from "@/lib/data/categories";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { coinItemTypeLabel } from "@/lib/coin-labels";
+import { HeroSlider, type HeroSlide } from "@/components/museum/hero-slider";
+import { GalleryCard } from "@/components/museum/gallery-card";
 import type { Coin, Medal as MedalType } from "@/types/api";
 
-function mediaSrc(primary?: string | null) {
-  if (!primary) return null;
-  const s = String(primary);
-  if (s.length <= 2 || s.startsWith("0")) return null;
-  return s;
-}
-
-function ItemThumb({ name, src }: { name: string; src?: string | null }) {
-  const url = mediaSrc(src);
-  if (url) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={url}
-        alt=""
-        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-      />
-    );
-  }
-  return (
-    <span className="text-4xl font-semibold text-primary/35">{name.charAt(0)}</span>
-  );
-}
-
-function FeaturedCard({
-  href,
-  name,
-  meta,
-  badge,
-  src,
-}: {
-  href: string;
-  name: string;
-  meta: string;
-  badge?: string | null;
-  src?: string | null;
-}) {
-  return (
-    <Link href={href} className="group">
-      <Card className="overflow-hidden border-border/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5">
-        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-surface-muted to-primary/[0.06]">
-          <ItemThumb name={name} src={src} />
-        </div>
-        <CardContent className="space-y-2 p-4">
-          <h3 className="line-clamp-2 font-medium text-text group-hover:text-primary">{name}</h3>
-          <p className="text-sm text-text-muted">{meta}</p>
-          {badge ? <Badge variant="outline">{badge}</Badge> : null}
-        </CardContent>
-      </Card>
-    </Link>
-  );
+function imgOf(item: { primary_image?: string | null; primary_image_url?: string | null }) {
+  return item.primary_image_url || item.primary_image || null;
 }
 
 export default function MuseumHomePage() {
@@ -82,110 +33,144 @@ export default function MuseumHomePage() {
   const medals = (medalsData?.results ?? []).slice(0, 6) as MedalType[];
   const coins = (coinsData?.results ?? []).slice(0, 6) as Coin[];
   const categories = categoriesData?.results ?? [];
-  const medalsCount = medalsData?.count;
-  const coinsCount = coinsData?.count;
+
+  const slides: HeroSlide[] = [
+    ...medals.slice(0, 4).map((m) => ({
+      id: `m-${m.id}`,
+      title: m.name,
+      subtitle: [m.country, m.year, m.historical_period].filter(Boolean).join(" · "),
+      meta: "مدال منتخب",
+      href: `/museum/medals/${m.id}`,
+      image: imgOf(m as { primary_image?: string | null }),
+      cta: "ورود به گالری مدال",
+    })),
+    ...coins.slice(0, 3).map((c) => ({
+      id: `c-${c.id}`,
+      title: c.name,
+      subtitle: [c.country, c.year, coinItemTypeLabel(c.item_type)].filter(Boolean).join(" · "),
+      meta: "سکه و پول منتخب",
+      href: `/museum/coins/${c.id}`,
+      image: imgOf(c),
+      cta: "ورود به گالری سکه",
+    })),
+  ];
+
+  const heroSlides: HeroSlide[] =
+    slides.length > 0
+      ? slides
+      : [
+          {
+            id: "welcome",
+            title: "موزه دیجیتال مدال و سکه",
+            subtitle:
+              "مجموعه‌ای منتخب از آثار تاریخی را در فضایی حرفه‌ای و بصری کاوش کنید.",
+            meta: "آرشیو دیجیتال",
+            href: "/museum/medals",
+            cta: "شروع کاوش",
+          },
+        ];
 
   return (
     <div className="space-y-16 sm:space-y-20">
-      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-bl from-primary/[0.08] via-surface to-surface-muted px-6 py-12 text-center sm:px-10 sm:py-16">
-        <div className="pointer-events-none absolute -left-20 -top-24 size-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-16 -right-16 size-56 rounded-full bg-primary-deep/10 blur-3xl" aria-hidden />
-        <div className="relative mx-auto max-w-2xl">
-          <p className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface/80 px-3 py-1 text-xs font-medium text-primary shadow-sm backdrop-blur">
-            <Landmark className="size-3.5" />
-            آرشیو دیجیتال
-          </p>
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight text-primary-deep sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
-            موزه مدال و سکه
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
-            مجموعه‌ای منتخب از مدال‌ها، سکه‌ها و اسکناس‌های تاریخی — از دوران کهن تا آثار معاصر
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/museum/medals"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-medium text-white shadow-md shadow-primary/25 transition hover:bg-primary-deep"
-            >
-              <Medal className="size-4" />
-              گالری مدال‌ها
-            </Link>
-            <Link
-              href="/museum/coins"
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-surface/90 px-6 text-sm font-medium text-text shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
-            >
-              <Coins className="size-4" />
-              گالری سکه و پول
-            </Link>
-          </div>
-          {(medalsCount != null || coinsCount != null) && (
-            <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-text-muted">
-              {medalsCount != null && (
-                <span>
-                  <strong className="tabular-nums text-text">{medalsCount}</strong> مدال
-                </span>
-              )}
-              {coinsCount != null && (
-                <span>
-                  <strong className="tabular-nums text-text">{coinsCount}</strong> سکه و پول
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
+      <HeroSlider slides={heroSlides} />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <Link
           href="/museum/medals"
-          className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 transition hover:border-primary/30 hover:shadow-md"
+          className="museum-card group relative overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-bl from-primary/[0.12] via-surface to-surface p-6 sm:p-8"
         >
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
-            <Medal className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1 text-right">
-            <span className="block font-semibold text-text">مجموعه مدال‌ها</span>
-            <span className="mt-0.5 block text-sm text-text-muted">کاوش در آرشیو تاریخی مدال</span>
-          </span>
-          <ArrowLeft className="size-4 shrink-0 text-text-subtle transition group-hover:text-primary" />
+          <div className="absolute -left-8 -top-8 size-32 rounded-full bg-primary/15 blur-2xl transition group-hover:bg-primary/25" />
+          <div className="relative flex items-start gap-4">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-deep text-white shadow-lg shadow-primary/30">
+              <Medal className="size-6" />
+            </span>
+            <div className="min-w-0 flex-1 text-right">
+              <p className="text-xs font-medium text-primary">مجموعه آثار</p>
+              <h2 className="mt-1 text-xl font-semibold text-primary-deep">گالری مدال‌ها</h2>
+              <p className="mt-2 text-sm leading-relaxed text-text-muted">
+                کاوش در مدال‌های تاریخی، نظامی و یادبود با فیلتر و جستجو
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                ورود به گالری
+                <ArrowLeft className="size-4 transition group-hover:-translate-x-1" />
+              </span>
+            </div>
+          </div>
         </Link>
+
         <Link
           href="/museum/coins"
-          className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 transition hover:border-primary/30 hover:shadow-md"
+          className="museum-card group relative overflow-hidden rounded-3xl border border-border/70 bg-gradient-to-bl from-amber-500/10 via-surface to-surface p-6 sm:p-8"
         >
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
-            <Coins className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1 text-right">
-            <span className="block font-semibold text-text">مجموعه سکه و پول</span>
-            <span className="mt-0.5 block text-sm text-text-muted">سکه، اسکناس و اقلام پولی</span>
-          </span>
-          <ArrowLeft className="size-4 shrink-0 text-text-subtle transition group-hover:text-primary" />
+          <div className="absolute -left-8 -top-8 size-32 rounded-full bg-amber-500/15 blur-2xl transition group-hover:bg-amber-500/25" />
+          <div className="relative flex items-start gap-4">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 text-white shadow-lg shadow-amber-700/25">
+              <Coins className="size-6" />
+            </span>
+            <div className="min-w-0 flex-1 text-right">
+              <p className="text-xs font-medium text-amber-800">مجموعه پولی</p>
+              <h2 className="mt-1 text-xl font-semibold text-primary-deep">گالری سکه و پول</h2>
+              <p className="mt-2 text-sm leading-relaxed text-text-muted">
+                سکه، اسکناس و اقلام پولی تاریخی در یک گالری بصری
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-800">
+                ورود به گالری
+                <ArrowLeft className="size-4 transition group-hover:-translate-x-1" />
+              </span>
+            </div>
+          </div>
         </Link>
+      </section>
+
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "مدال‌ها", value: medalsData?.count ?? "—", icon: Medal },
+          { label: "سکه و پول", value: coinsData?.count ?? "—", icon: Coins },
+          { label: "مجموعه‌ها", value: categories.length || "—", icon: Sparkles },
+          { label: "آثار منتخب", value: medals.length + coins.length || "—", icon: Sparkles },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-border/70 bg-surface/80 px-4 py-5 text-center shadow-sm backdrop-blur"
+          >
+            <s.icon className="mx-auto size-5 text-primary/70" />
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-primary-deep">{s.value}</p>
+            <p className="mt-0.5 text-xs text-text-muted">{s.label}</p>
+          </div>
+        ))}
       </section>
 
       <section>
         <div className="mb-6 flex items-end justify-between gap-3">
-          <h2 className="text-xl font-semibold text-text">مدال‌های برجسته</h2>
-          <Link href="/museum/medals" className="text-sm font-medium text-primary hover:underline">همه مدال‌ها</Link>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-primary">منتخب</p>
+            <h2 className="mt-1 text-2xl font-semibold text-primary-deep">مدال‌های برجسته</h2>
+          </div>
+          <Link href="/museum/medals" className="text-sm font-medium text-primary hover:underline">
+            همه مدال‌ها
+          </Link>
         </div>
         {medalsLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[4/5] rounded-xl" />
+              <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
             ))}
           </div>
         ) : medals.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border py-10 text-center text-sm text-text-muted">هنوز مدالی ثبت نشده است.</p>
+          <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-text-muted">
+            هنوز مدالی ثبت نشده است.
+          </p>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {medals.map((m) => (
-              <FeaturedCard
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {medals.map((m, i) => (
+              <GalleryCard
                 key={m.id}
                 href={`/museum/medals/${m.id}`}
                 name={m.name}
                 meta={`${m.country || "—"} · ${m.year ?? "—"}`}
                 badge={m.category_detail?.name}
-                src={(m as { primary_image_url?: string }).primary_image_url || m.primary_image}
+                image={imgOf(m as { primary_image?: string | null })}
+                index={i}
               />
             ))}
           </div>
@@ -194,27 +179,35 @@ export default function MuseumHomePage() {
 
       <section>
         <div className="mb-6 flex items-end justify-between gap-3">
-          <h2 className="text-xl font-semibold text-text">سکه و پول برجسته</h2>
-          <Link href="/museum/coins" className="text-sm font-medium text-primary hover:underline">همه اقلام</Link>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-amber-800">منتخب</p>
+            <h2 className="mt-1 text-2xl font-semibold text-primary-deep">سکه و پول برجسته</h2>
+          </div>
+          <Link href="/museum/coins" className="text-sm font-medium text-primary hover:underline">
+            همه اقلام
+          </Link>
         </div>
         {coinsLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[4/5] rounded-xl" />
+              <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
             ))}
           </div>
         ) : coins.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border py-10 text-center text-sm text-text-muted">هنوز قلمی ثبت نشده است.</p>
+          <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-text-muted">
+            هنوز قلمی ثبت نشده است.
+          </p>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {coins.map((c) => (
-              <FeaturedCard
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {coins.map((c, i) => (
+              <GalleryCard
                 key={c.id}
                 href={`/museum/coins/${c.id}`}
                 name={c.name}
                 meta={`${c.country || "—"} · ${c.year ?? "—"}`}
                 badge={c.material || coinItemTypeLabel(c.item_type)}
-                src={c.primary_image_url || c.primary_image}
+                image={imgOf(c)}
+                index={i}
               />
             ))}
           </div>
@@ -223,17 +216,18 @@ export default function MuseumHomePage() {
 
       {categories.length > 0 && (
         <section>
-          <h2 className="mb-6 text-xl font-semibold text-text">مجموعه‌ها</h2>
+          <h2 className="mb-6 text-2xl font-semibold text-primary-deep">مجموعه‌ها</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((c) => (
+            {categories.map((c, i) => (
               <Link
                 key={c.id}
                 href={`/museum/medals?category=${c.id}`}
-                className="rounded-2xl border border-border bg-surface px-5 py-4 transition-all hover:border-primary/30 hover:bg-primary/[0.04] hover:shadow-sm"
+                className="museum-card rounded-2xl border border-border/70 bg-surface px-5 py-5 animate-fade-up"
+                style={{ animationDelay: `${i * 40}ms` }}
               >
-                <h3 className="font-medium text-text">{c.name}</h3>
+                <h3 className="font-semibold text-text">{c.name}</h3>
                 {c.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-text-muted">{c.description}</p>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-text-muted">{c.description}</p>
                 )}
               </Link>
             ))}
