@@ -1,36 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, Coins } from "lucide-react";
 import { getCoins } from "@/lib/data/coins";
 import { getCategories } from "@/lib/data/categories";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { coinItemTypeLabel } from "@/lib/coin-labels";
-import type { Coin } from "@/types/api";
+import { HeroSlider, type HeroSlide } from "@/components/museum/hero-slider";
+import { GalleryCard } from "@/components/museum/gallery-card";
 
-function CoinThumb({ coin }: { coin: Coin }) {
-  const src = coin.primary_image_url || coin.primary_image;
-  if (src && typeof src === "string" && src.length > 2 && !src.startsWith("0")) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-      />
-    );
-  }
-  return (
-    <span className="text-4xl font-semibold text-primary/40">{coin.name.charAt(0)}</span>
-  );
+function imgOf(c: { primary_image?: string | null; primary_image_url?: string | null }) {
+  return c.primary_image_url || c.primary_image || null;
 }
 
 export default function MuseumCoinsPage() {
@@ -59,18 +44,55 @@ export default function MuseumCoinsPage() {
   const coins = data?.results ?? [];
   const total = data?.count ?? 0;
 
+  const slides: HeroSlide[] = useMemo(
+    () =>
+      coins.slice(0, 5).map((c) => ({
+        id: c.id,
+        title: c.name,
+        subtitle: [c.country, c.year, coinItemTypeLabel(c.item_type)]
+          .filter(Boolean)
+          .join(" · "),
+        meta: c.denomination || "سکه و پول",
+        href: `/museum/coins/${c.id}`,
+        image: imgOf(c),
+        cta: "مشاهده جزئیات",
+      })),
+    [coins]
+  );
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-primary-deep">
-          مجموعه سکه و پول
-        </h1>
-        <p className="mt-2 text-text-muted">
-          کاوش در آرشیو سکه‌ها، اسکناس‌ها و اقلام پولی تاریخی
-        </p>
+    <div className="space-y-10">
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-l from-amber-500/15 via-surface to-surface px-6 py-8 sm:px-10">
+        <div className="pointer-events-none absolute -left-10 top-0 size-40 rounded-full bg-amber-500/25 blur-3xl" />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-amber-800">
+              <Coins className="size-3.5" />
+              گالری
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-primary-deep sm:text-4xl">
+              مجموعه سکه و پول
+            </h1>
+            <p className="mt-2 max-w-lg text-sm text-text-muted sm:text-base">
+              سکه، اسکناس و اقلام پولی تاریخی در یک گالری بصری و تعاملی
+            </p>
+          </div>
+          {total > 0 && (
+            <div className="rounded-2xl border border-amber-600/20 bg-surface/80 px-4 py-3 text-center shadow-sm backdrop-blur">
+              <p className="text-2xl font-semibold tabular-nums text-primary-deep">
+                {total}
+              </p>
+              <p className="text-[11px] text-text-muted">قلم در مجموعه</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      {!isLoading && slides.length > 0 && (
+        <HeroSlider slides={slides} heightClass="h-[min(52vh,24rem)]" />
+      )}
+
+      <div className="flex flex-wrap gap-3 rounded-2xl border border-border/70 bg-surface/70 p-3 shadow-sm backdrop-blur">
         <form
           className="flex min-w-[200px] flex-1 gap-2"
           onSubmit={(e) => {
@@ -85,13 +107,15 @@ export default function MuseumCoinsPage() {
               placeholder="جستجو…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="pr-9"
+              className="border-border/80 bg-surface pr-9"
             />
           </div>
-          <Button type="submit" variant="secondary">جستجو</Button>
+          <Button type="submit" className="shrink-0">
+            جستجو
+          </Button>
         </form>
         <select
-          className="h-10 rounded-lg border border-border bg-surface px-3 text-sm"
+          className="h-10 rounded-xl border border-border/80 bg-surface px-3 text-sm"
           value={category ?? ""}
           onChange={(e) => {
             setCategory(e.target.value ? Number(e.target.value) : undefined);
@@ -100,40 +124,45 @@ export default function MuseumCoinsPage() {
         >
           <option value="">همه دسته‌ها</option>
           {categoriesData?.results?.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
           ))}
         </select>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[4/5] rounded-xl" />
+            <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
           ))}
         </div>
       ) : coins.length === 0 ? (
-        <EmptyState title="نتیجه‌ای یافت نشد" description="فیلترها را تغییر دهید." />
+        <EmptyState
+          title="نتیجه‌ای یافت نشد"
+          description="فیلترها را تغییر دهید."
+        />
       ) : (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {coins.map((c) => (
-              <Link key={c.id} href={`/museum/coins/${c.id}`} className="group">
-                <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                  <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-surface-muted">
-                    <CoinThumb coin={c} />
-                  </div>
-                  <CardContent className="space-y-2 p-4">
-                    <h3 className="line-clamp-2 font-medium text-text group-hover:text-primary">{c.name}</h3>
-                    <p className="text-sm text-text-muted">{c.country} · {c.year ?? "—"}</p>
-                    {(c.material || c.item_type) && (
-                      <Badge variant="outline">{c.material || coinItemTypeLabel(c.item_type)}</Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {coins.map((c, i) => (
+              <GalleryCard
+                key={c.id}
+                href={`/museum/coins/${c.id}`}
+                name={c.name}
+                meta={`${c.country || "—"} · ${c.year ?? "—"}`}
+                badge={c.material || coinItemTypeLabel(c.item_type)}
+                image={imgOf(c)}
+                index={i}
+              />
             ))}
           </div>
-          <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            pageSize={20}
+            total={total}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
