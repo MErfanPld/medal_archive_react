@@ -240,10 +240,39 @@ export function daysInMonth(
   return month % 2 === 1 ? 30 : 29;
 }
 
+/** Today's date as Gregorian ISO YYYY-MM-DD (local). */
+export function todayIsoDate(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * If iso is after today, clamp to today. Empty stays null.
+ * Used before sending purchase/valuation dates to Backend.
+ */
+export function clampToTodayOrPast(
+  iso: string | null | undefined
+): string | null {
+  if (!iso) return null;
+  const today = todayIsoDate();
+  return iso > today ? today : iso;
+}
+
 export function yearRange(
   calendar: CalendarType
 ): { min: number; max: number } {
-  if (calendar === "jalali") return { min: 1200, max: 1450 };
-  if (calendar === "hijri") return { min: 1200, max: 1500 };
-  return { min: 1800, max: 2030 };
+  const today = new Date();
+  const gYear = today.getFullYear();
+  if (calendar === "jalali") {
+    const jy = gYear - 621;
+    return { min: 1200, max: jy + 1 };
+  }
+  if (calendar === "hijri") {
+    const hy = gYear - 579;
+    return { min: 1200, max: hy + 1 };
+  }
+  return { min: 1800, max: gYear };
 }
