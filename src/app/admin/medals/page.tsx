@@ -24,6 +24,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
+import { ApiError } from "@/lib/api/client";
 import type { Medal } from "@/types/api";
 
 export default function MedalsPage() {
@@ -31,17 +33,22 @@ export default function MedalsPage() {
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+  const toast = useToast();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["medals", { search, page }],
-    queryFn: () => getMedals({ search, page, page_size: 12 }),
+    queryFn: () => getMedals({ search: search || undefined, page, ordering: "-created_at" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteMedal,
+    mutationFn: (id: number) => deleteMedal(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["medals"] });
       setDeleteId(null);
+      toast.success("مدال با موفقیت حذف شد");
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "خطا در حذف مدال");
     },
   });
 
@@ -63,8 +70,14 @@ export default function MedalsPage() {
 
   if (error) {
     return (
-      <div className="py-12 text-center text-destructive">
-        خطا در بارگذاری مدال‌ها
+      <div className="space-y-4 py-12 text-center">
+        <p className="text-danger">خطا در بارگذاری مدال‌ها</p>
+        <p className="text-sm text-text-muted">
+          {(error as Error)?.message || "اتصال به سرور را بررسی کنید."}
+        </p>
+        <Button type="button" onClick={() => refetch()}>
+          تلاش مجدد
+        </Button>
       </div>
     );
   }
@@ -117,9 +130,9 @@ export default function MedalsPage() {
         />
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50">
+              <thead className="bg-surface-muted/50">
                 <tr>
                   <th className="p-3 text-right font-medium">مدال</th>
                   <th className="p-3 text-right font-medium">کشور</th>
@@ -133,7 +146,7 @@ export default function MedalsPage() {
                 {medals.map((m: Medal) => (
                   <tr
                     key={m.id}
-                    className="border-t border-border transition-colors hover:bg-muted/30"
+                    className="border-t border-border transition-colors hover:bg-surface-muted/30"
                   >
                     <td className="p-3">
                       <div className="flex items-center gap-3">
@@ -163,22 +176,24 @@ export default function MedalsPage() {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/admin/medals/${m.id}`}>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/admin/medals/${m.id}`} aria-label="مشاهده">
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/admin/medals/${m.id}/edit`}>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/admin/medals/${m.id}/edit`} aria-label="ویرایش">
                             <Pencil className="h-4 w-4" />
                           </Link>
                         </Button>
                         <Button
+                          type="button"
                           variant="ghost"
-                          size="icon"
+                          size="sm"
                           onClick={() => setDeleteId(m.id)}
+                          aria-label="حذف"
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4 text-danger" />
                         </Button>
                       </div>
                     </td>
@@ -215,16 +230,25 @@ export default function MedalsPage() {
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`/admin/medals/${m.id}/edit`}>ویرایش</Link>
                     </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="text-danger"
+                      onClick={() => setDeleteId(m.id)}
+                    >
+                      حذف
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          {total > 12 && (
+          {total > 20 && (
             <Pagination
               page={page}
-              pageSize={12}
+              pageSize={20}
               total={total}
               onPageChange={setPage}
             />
@@ -238,7 +262,11 @@ export default function MedalsPage() {
         title="حذف مدال"
         description="آیا از حذف این مدال مطمئن هستید؟ این عمل قابل بازگشت نیست."
         confirmLabel="حذف"
-        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+        onConfirm={async () => {
+          const id = deleteId;
+          if (id == null) return;
+          await deleteMutation.mutateAsync(id);
+        }}
         loading={deleteMutation.isPending}
         variant="danger"
       />
