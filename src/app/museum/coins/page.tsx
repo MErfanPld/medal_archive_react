@@ -29,7 +29,7 @@ export default function MuseumCoinsPage() {
     queryFn: () => getCategories({ is_active: true, pageSize: 50 }),
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["museum-coins", page, search, category],
     queryFn: () =>
       getCoins({
@@ -39,6 +39,7 @@ export default function MuseumCoinsPage() {
         is_active: true,
         ordering: "-year",
       }),
+    retry: 1,
   });
 
   const coins = data?.results ?? [];
@@ -61,7 +62,7 @@ export default function MuseumCoinsPage() {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-l from-amber-500/15 via-surface to-surface px-6 py-8 sm:px-10">
         <div className="pointer-events-none absolute -left-10 top-0 size-40 rounded-full bg-amber-500/25 blur-3xl" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
@@ -131,7 +132,21 @@ export default function MuseumCoinsPage() {
         </select>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <div className="rounded-2xl border border-danger/30 bg-danger-bg/40 px-4 py-8 text-center">
+          <p className="text-sm font-medium text-danger">خطا در دریافت سکه و پول از سرور</p>
+          <p className="mt-1 text-xs text-text-muted">
+            {(error as Error)?.message || "لطفاً اتصال و لاگین را بررسی کنید."}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-white"
+          >
+            تلاش مجدد
+          </button>
+        </div>
+      ) : isLoading ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
@@ -154,6 +169,7 @@ export default function MuseumCoinsPage() {
                 badge={c.material || coinItemTypeLabel(c.item_type)}
                 image={imgOf(c)}
                 index={i}
+                kind="coin"
               />
             ))}
           </div>
