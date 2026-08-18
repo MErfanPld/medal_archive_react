@@ -2,13 +2,8 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-
-function mediaOk(src?: string | null) {
-  if (!src) return false;
-  const s = String(src);
-  return s.length > 2 && !s.startsWith("0");
-}
+import { cn, resolveMediaUrl } from "@/lib/utils";
+import { ItemPlaceholder } from "@/components/museum/item-placeholder";
 
 interface GalleryCardProps {
   href: string;
@@ -18,6 +13,7 @@ interface GalleryCardProps {
   image?: string | null;
   index?: number;
   className?: string;
+  kind?: "medal" | "coin";
 }
 
 export function GalleryCard({
@@ -28,7 +24,10 @@ export function GalleryCard({
   image,
   index = 0,
   className,
+  kind = "medal",
 }: GalleryCardProps) {
+  const url = resolveMediaUrl(image);
+
   return (
     <Link
       href={href}
@@ -36,30 +35,40 @@ export function GalleryCard({
         "museum-card group block overflow-hidden rounded-2xl border border-border/70 bg-surface animate-fade-up",
         className
       )}
-      style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
-      <div className="museum-shine relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-surface-muted via-primary/[0.06] to-primary-deep/[0.08]">
-        {mediaOk(image) ? (
+      <div className="museum-shine relative aspect-[4/3] overflow-hidden bg-surface-muted">
+        {url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={String(image)}
+            src={url}
             alt=""
             className="museum-card-media h-full w-full object-cover"
+            onError={(e) => {
+              const el = e.currentTarget;
+              el.style.display = "none";
+              const wrap = el.parentElement?.querySelector(
+                "[data-placeholder]"
+              ) as HTMLElement | null;
+              if (wrap) wrap.style.display = "flex";
+            }}
           />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="text-5xl font-semibold text-primary/25 transition duration-300 group-hover:text-primary/40 group-hover:scale-110">
-              {name.charAt(0)}
-            </span>
-          </div>
-        )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+        ) : null}
+        <div
+          data-placeholder
+          className={cn("absolute inset-0", url ? "hidden" : "flex")}
+        >
+          <ItemPlaceholder kind={kind} label={name.charAt(0)} />
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
       </div>
-      <div className="space-y-2 p-4">
-        <h3 className="line-clamp-2 text-sm font-semibold text-text transition-colors group-hover:text-primary sm:text-base">
+      <div className="space-y-1.5 p-3.5 sm:p-4">
+        <h3 className="line-clamp-2 text-sm font-semibold text-text transition-colors group-hover:text-primary sm:text-[0.95rem]">
           {name}
         </h3>
-        {meta && <p className="text-xs text-text-muted sm:text-sm">{meta}</p>}
+        {meta && (
+          <p className="text-xs text-text-muted sm:text-[0.8125rem]">{meta}</p>
+        )}
         {badge ? (
           <Badge variant="outline" className="text-[11px]">
             {badge}
