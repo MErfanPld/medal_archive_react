@@ -74,7 +74,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               t.variant === "error" &&
                 "border-red-200 bg-red-50 text-red-900",
               t.variant === "info" &&
-                "border-border bg-card text-text"
+                "border-border bg-surface text-text shadow-lg"
             )}
           >
             {t.variant === "success" && (

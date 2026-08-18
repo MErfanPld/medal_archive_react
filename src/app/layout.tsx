@@ -28,6 +28,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Theme CSS variables are applied to <html> after client mount (preferences-store).
+  // suppressHydrationWarning: browser extensions may inject attributes (e.g. cz-shortcut-listen).
   return (
     <html
       lang="fa"
@@ -35,13 +37,8 @@ export default function RootLayout({
       className={`${vazirmatn.variable} h-full`}
       suppressHydrationWarning
     >
-      {/*
-        suppressHydrationWarning on body: browser extensions (e.g. ColorZilla)
-        inject attributes like cz-shortcut-listen before React hydrates.
-        The app itself does not set those attributes.
-      */}
       <body
-        className="min-h-full bg-background text-text antialiased"
+        className="min-h-full bg-background font-sans text-text antialiased"
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>
