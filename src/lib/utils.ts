@@ -34,3 +34,20 @@ export function formatDate(iso: string | null | undefined): string {
     return iso;
   }
 }
+
+/**
+ * Resolve media URL from API (relative `/media/...` or absolute).
+ * Returns null when value is empty / placeholder-like.
+ */
+export function resolveMediaUrl(
+  src?: string | null
+): string | null {
+  if (!src) return null;
+  const s = String(src).trim();
+  if (!s || s.length <= 2 || s === "0" || s.startsWith("0.")) return null;
+  if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("data:")) {
+    return s;
+  }
+  if (s.startsWith("/")) return s;
+  return `/${s.replace(/^\.\//, "")}`;
+}
