@@ -208,7 +208,9 @@ export async function updateMedal(id: number, data: Partial<MedalRequest>): Prom
 
 export async function deleteMedal(id: number): Promise<boolean> {
   if (!useMock) {
-    try { await medalsApi.destroy(id); return true; } catch { return false; }
+    // Let ApiError bubble so UI can show the real backend message
+    await medalsApi.destroy(id);
+    return true;
   }
   await delay(300);
   const before = medalsStore.length;
