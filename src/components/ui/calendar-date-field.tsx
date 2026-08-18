@@ -13,12 +13,15 @@ import {
   partsToGregorian,
   gregorianToParts,
   formatDisplay,
+  todayIsoDate,
+  clampToTodayOrPast,
 } from "@/lib/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export interface CalendarDateFieldProps {
   id?: string;
+  /** ISO date YYYY-MM-DD (Gregorian) — what Backend stores */
   value?: string | null;
   onChange?: (iso: string | null) => void;
   onBlur?: () => void;
@@ -26,8 +29,14 @@ export interface CalendarDateFieldProps {
   error?: string;
   className?: string;
   defaultCalendar?: CalendarType;
+  /** Disallow dates after today (purchase / valuation). Default false. */
+  maxToday?: boolean;
 }
 
+/**
+ * Multi-calendar date field.
+ * User picks Jalali / Hijri / Gregorian UI; value always stored as Gregorian ISO.
+ */
 export function CalendarDateField({
   id,
   value,
@@ -37,6 +46,7 @@ export function CalendarDateField({
   error,
   className,
   defaultCalendar = "jalali",
+  maxToday = false,
 }: CalendarDateFieldProps) {
   const [calendar, setCalendar] = React.useState<CalendarType>(defaultCalendar);
 
@@ -86,7 +96,13 @@ export function CalendarDateField({
       day: Math.min(Number(d), daysInMonth(Number(y), Number(m), calendar)),
     };
     const g = partsToGregorian(local, calendar);
-    onChange?.(toIsoDate(g));
+    let iso = toIsoDate(g);
+    if (maxToday) {
+      iso = clampToTodayOrPast(iso) ?? iso;
+      const today = todayIsoDate();
+      if (iso > today) iso = today;
+    }
+    onChange?.(iso);
   };
 
   const onYear = (v: string) => {
@@ -98,7 +114,7 @@ export function CalendarDateField({
     const m = v === "" ? "" : Number(v);
     setMonth(m);
     let d = day;
-    if (year !== "" && m !== "" && day !== "") {
+    if (yValid(year) && m !== "" && day !== "") {
       const max = daysInMonth(Number(year), Number(m), calendar);
       if (Number(day) > max) {
         d = max;
@@ -214,6 +230,10 @@ export function CalendarDateField({
       )}
     </div>
   );
+}
+
+function yValid(y: number | ""): y is number {
+  return y !== "";
 }
 
 function selectClass(error?: string) {
