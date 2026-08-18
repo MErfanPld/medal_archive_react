@@ -86,6 +86,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
+      <style>{`
+        @keyframes toastProgress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+        .toast-progress { width: 100%; animation: toastProgress 4s linear forwards; }
+      `}</style>
       <div
         className="pointer-events-none fixed inset-x-0 top-4 z-[200] flex flex-col items-center gap-2.5 px-4 sm:top-6"
         dir="rtl"
@@ -100,7 +104,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={t.id}
               role="status"
               className={cn(
-                "toast-enter pointer-events-auto relative flex w-full max-w-md overflow-hidden rounded-2xl border backdrop-blur-xl",
+                "animate-fade-up pointer-events-auto relative flex w-full max-w-md overflow-hidden rounded-2xl border backdrop-blur-xl",
                 cfg.shell
               )}
             >
