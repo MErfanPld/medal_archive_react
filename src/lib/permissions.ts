@@ -1,10 +1,23 @@
 /**
  * Centralized frontend authorization helpers.
  * Backend remains the final security authority.
+ *
+ * Roles from the API (documented):
+ * - Superuser / superuser / super_admin → full access
+ * - Admin / admin → users, roles, content
+ * - Curator / curator → categories + medals
+ * - Viewer / viewer → view-only
+ *
+ * Permission codenames (from OpenAPI / backend):
+ * categories.view | categories.create | categories.update | categories.delete
+ * medals.view | medals.create | medals.update | medals.delete
+ * reports.view
+ * + users / ACL related
  */
 
 import type { UserMe, RoleMini } from "@/types/api";
 
+/** Known permission codenames used for UI gating */
 export const PERMISSIONS = {
   CATEGORIES_VIEW: "categories.view",
   CATEGORIES_CREATE: "categories.create",
@@ -28,6 +41,7 @@ export const PERMISSIONS = {
 export type PermissionCodename =
   (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
+/** Role codenames that imply full access */
 const FULL_ACCESS_ROLES = new Set([
   "superuser",
   "super_admin",
@@ -35,6 +49,7 @@ const FULL_ACCESS_ROLES = new Set([
   "admin",
 ]);
 
+/** Approximate capability matrix by role (until /me returns full permissions) */
 const ROLE_CAPABILITIES: Record<string, Set<string>> = {
   curator: new Set([
     PERMISSIONS.CATEGORIES_VIEW,
@@ -81,15 +96,37 @@ function getRoleCodes(user: UserMe | null | undefined): string[] {
 }
 
 export function isFullAccess(user: UserMe | null | undefined): boolean {
+  if (!user) return false;
+  const anyUser = user as UserMe & {
+    is_superuser?: boolean;
+    is_staff?: boolean;
+  };
+  if (anyUser.is_superuser) return true;
+
   return getRoleCodes(user).some((c) => FULL_ACCESS_ROLES.has(c));
 }
 
+/**
+ * Check whether the user may perform the given permission (UX only).
+ * Backend remains the authority — this only gates UI.
+ */
 export function hasPermission(
   user: UserMe | null | undefined,
   permission: string
 ): boolean {
   if (!user) return false;
   if (isFullAccess(user)) return true;
+
+  const anyUser = user as UserMe & {
+    permissions?: Array<string | { codename?: string }>;
+  };
+  if (Array.isArray(anyUser.permissions)) {
+    for (const p of anyUser.permissions) {
+      const code = typeof p === "string" ? p : p?.codename;
+      if (code === permission) return true;
+    }
+  }
+
   const codes = getRoleCodes(user);
   for (const code of codes) {
     const caps = ROLE_CAPABILITIES[code];
@@ -121,6 +158,7 @@ export function hasRole(
   return roleCodenames.some((r) => codes.has(r.toLowerCase()));
 }
 
+/** Alias for readability in components */
 export function can(
   user: UserMe | null | undefined,
   permission: string
@@ -128,6 +166,7 @@ export function can(
   return hasPermission(user, permission);
 }
 
+/** Navigation visibility helpers */
 export function canViewMedals(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.MEDALS_VIEW);
 }

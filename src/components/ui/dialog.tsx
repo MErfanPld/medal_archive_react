@@ -50,6 +50,7 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           "relative z-10 w-full max-w-md rounded-xl border border-border bg-surface shadow-lg",
           className
@@ -117,9 +118,15 @@ export function ConfirmDialog({
             انصراف
           </Button>
           <Button
+            type="button"
             variant={variant === "danger" ? "danger" : "primary"}
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void onConfirm();
+            }}
             loading={loading}
+            disabled={loading}
           >
             {confirmLabel}
           </Button>
