@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/auth-store";
 import { Search } from "lucide-react";
 import { getCoins } from "@/lib/data/coins";
 import { getCategories } from "@/lib/data/categories";
@@ -15,6 +16,8 @@ function imgOf(c: { primary_image?: string | null; primary_image_url?: string | 
 }
 
 export default function MuseumCoinsArchivePage() {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -23,11 +26,13 @@ export default function MuseumCoinsArchivePage() {
 
   const { data: categoriesData } = useQuery({
     queryKey: ["museum-cats"],
+    enabled: isHydrated,
     queryFn: () => getCategories({ is_active: true, pageSize: 50 }),
   });
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["museum-coins", page, search, category, ordering],
+    enabled: isHydrated,
     queryFn: () =>
       getCoins({
         page,
@@ -45,16 +50,18 @@ export default function MuseumCoinsArchivePage() {
   return (
     <div>
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
           <p className="museum-label text-primary">Currency Catalog</p>
           <h1 className="museum-serif mt-3 text-4xl font-semibold text-primary-deep sm:text-5xl">
             آرشیو سکه و پول
           </h1>
-          <p className="mt-3 text-sm text-text-muted">{formatNumber(total)} قلم ثبت‌شده</p>
+          <p className="mt-3 text-sm text-text-muted">
+            {formatNumber(total)} قلم ثبت‌شده
+          </p>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10">
         <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-3 sm:flex-row sm:items-center">
           <form
             className="flex min-w-0 flex-1 gap-2"
@@ -73,7 +80,10 @@ export default function MuseumCoinsArchivePage() {
                 className="h-11 w-full rounded-sm border border-border bg-background pr-10 pl-3 text-sm outline-none focus:border-primary"
               />
             </div>
-            <button type="submit" className="h-11 shrink-0 rounded-sm bg-primary px-5 text-sm font-medium text-white hover:bg-primary-deep">
+            <button
+              type="submit"
+              className="h-11 shrink-0 rounded-sm bg-primary px-5 text-sm font-medium text-white hover:bg-primary-deep"
+            >
               جستجو
             </button>
           </form>
@@ -87,7 +97,9 @@ export default function MuseumCoinsArchivePage() {
           >
             <option value="">همه دسته‌ها</option>
             {categoriesData?.results?.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
           <select
@@ -108,8 +120,16 @@ export default function MuseumCoinsArchivePage() {
         {isError ? (
           <div className="mt-12 rounded-sm border border-danger/30 bg-danger-bg/40 px-4 py-10 text-center">
             <p className="font-medium text-danger">خطا در دریافت آرشیو</p>
-            <p className="mt-1 text-xs text-text-muted">{(error as Error)?.message}</p>
-            <button type="button" onClick={() => refetch()} className="mt-4 rounded-sm bg-primary px-4 py-2 text-sm text-white">تلاش مجدد</button>
+            <p className="mt-1 text-xs text-text-muted">
+              {(error as Error)?.message}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-4 rounded-sm bg-primary px-4 py-2 text-sm text-white"
+            >
+              تلاش مجدد
+            </button>
           </div>
         ) : isLoading ? (
           <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
@@ -121,7 +141,7 @@ export default function MuseumCoinsArchivePage() {
           <p className="mt-16 text-center text-sm text-text-muted">نتیجه‌ای یافت نشد.</p>
         ) : (
           <>
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
               {coins.map((c, i) => (
                 <ObjectCard
                   key={c.id}
