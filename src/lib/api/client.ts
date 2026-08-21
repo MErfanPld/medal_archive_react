@@ -135,9 +135,10 @@ async function request<T = unknown>(
       }
     }
 
-    // 401 on authenticated calls → clear session (not on login/skipAuth)
+    // 401 on authenticated calls → clear session only if we sent a token
     if (response.status === 401 && !skipAuth) {
-      clearTokens();
+      const hadToken = Boolean(getAccessToken());
+      if (hadToken) clearTokens();
     }
 
     throw new ApiError(response.status, String(message), bodyObj);
