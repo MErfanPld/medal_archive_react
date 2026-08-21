@@ -34,11 +34,12 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
     <div className="museum-public museum-shell min-h-screen bg-background text-text">
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-50 border-b border-transparent transition-all duration-300",
-          scrolled ? "museum-nav-scrolled" : "bg-transparent"
+          "fixed inset-x-0 top-0 z-50 border-b border-border bg-background",
+          "shadow-[0_1px_0_0_color-mix(in_srgb,var(--border)_80%,transparent)]",
+          scrolled && "shadow-md shadow-black/5"
         )}
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:h-[4.25rem] sm:px-8 lg:px-10">
           <Link href="/museum" className="group flex items-center gap-2.5">
             <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-deep text-white shadow-md shadow-primary/20 transition group-hover:scale-105">
               <Landmark className="size-4" />
@@ -143,16 +144,26 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
           <div>
             <p className="museum-label text-white/40">کاوش</p>
             <ul className="mt-4 space-y-2 text-sm text-white/70">
-              <li><Link href="/museum/medals" className="hover:text-white">آرشیو مدال‌ها</Link></li>
-              <li><Link href="/museum/coins" className="hover:text-white">سکه و پول</Link></li>
-              <li><Link href="/museum" className="hover:text-white">نمای عمومی</Link></li>
+              <li>
+                <Link href="/museum/medals" className="hover:text-white">آرشیو مدال‌ها</Link>
+              </li>
+              <li>
+                <Link href="/museum/coins" className="hover:text-white">سکه و پول</Link>
+              </li>
+              <li>
+                <Link href="/museum" className="hover:text-white">نمای عمومی</Link>
+              </li>
             </ul>
           </div>
           <div>
             <p className="museum-label text-white/40">سامانه</p>
             <ul className="mt-4 space-y-2 text-sm text-white/70">
-              <li><Link href="/login" className="hover:text-white">ورود مدیران</Link></li>
-              <li><Link href="/admin/dashboard" className="hover:text-white">پنل مدیریت</Link></li>
+              <li>
+                <Link href="/login" className="hover:text-white">ورود مدیران</Link>
+              </li>
+              <li>
+                <Link href="/admin/dashboard" className="hover:text-white">پنل مدیریت</Link>
+              </li>
             </ul>
           </div>
         </div>
