@@ -43,12 +43,15 @@ export function ObjectCard({
     <Link
       href={href}
       className={cn(
-        "group relative block overflow-hidden rounded-sm museum-reveal",
+        "group relative block overflow-hidden rounded-md museum-reveal",
+        "border border-border/90 bg-surface shadow-sm",
+        "ring-1 ring-black/[0.03] transition duration-300",
+        "hover:border-primary/25 hover:shadow-lg hover:shadow-primary/10",
         className
       )}
       style={{ animationDelay: `${Math.min(index, 10) * 55}ms` }}
     >
-      <div className={cn("museum-frame relative overflow-hidden", aspect)}>
+      <div className={cn("museum-frame relative overflow-hidden rounded-md", aspect)}>
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -70,7 +73,9 @@ export function ObjectCard({
         >
           <ItemPlaceholder kind={kind} label={name.charAt(0)} />
         </div>
+
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1a1614]/85 via-[#1a1614]/10 to-transparent opacity-80 transition duration-500 group-hover:opacity-95" />
+
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           {archiveNo ? (
             <p className="museum-label mb-1.5 text-white/55">{archiveNo}</p>
