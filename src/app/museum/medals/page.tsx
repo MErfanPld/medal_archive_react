@@ -1,41 +1,49 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Medal } from "lucide-react";
+import { useAuthStore } from "@/stores/auth-store";
+import { Search } from "lucide-react";
 import { getMedals } from "@/lib/data/medals";
 import { getCategories } from "@/lib/data/categories";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ObjectCard } from "@/components/museum/object-card";
 import { Pagination } from "@/components/ui/pagination";
-import { HeroSlider, type HeroSlide } from "@/components/museum/hero-slider";
-import { GalleryCard } from "@/components/museum/gallery-card";
+import { formatNumber } from "@/lib/utils";
 
 function imgOf(m: { primary_image?: string | null; primary_image_url?: string | null }) {
   return m.primary_image_url || m.primary_image || null;
 }
 
-export default function MuseumMedalsPage() {
+function MuseumMedalsArchivePage() {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const initialCat = searchParams.get("category");
+
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [category, setCategory] = useState<number | undefined>();
+  const [search, setSearch] = useState(initialQ);
+  const [searchInput, setSearchInput] = useState(initialQ);
+  const [category, setCategory] = useState<number | undefined>(
+    initialCat ? Number(initialCat) : undefined
+  );
+  const [ordering, setOrdering] = useState("-created_at");
 
   const { data: categoriesData } = useQuery({
     queryKey: ["museum-cats"],
+    enabled: isHydrated,
     queryFn: () => getCategories({ is_active: true, pageSize: 50 }),
   });
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["museum-medals", page, search, category],
+    queryKey: ["museum-medals", page, search, category, ordering],
+    enabled: isHydrated,
     queryFn: () =>
       getMedals({
         page,
         search: search || undefined,
         category,
-        ordering: "-year",
+        ordering,
       }),
     retry: 1,
   });
@@ -43,140 +51,136 @@ export default function MuseumMedalsPage() {
   const medals = data?.results ?? [];
   const total = data?.count ?? 0;
 
-  const slides: HeroSlide[] = useMemo(
-    () =>
-      medals.slice(0, 5).map((m) => ({
-        id: m.id,
-        title: m.name,
-        subtitle: [m.country, m.year, m.material].filter(Boolean).join(" · "),
-        meta: m.category_detail?.name || "مدال",
-        href: `/museum/medals/${m.id}`,
-        image: imgOf(m as { primary_image?: string | null }),
-        cta: "مشاهده جزئیات",
-      })),
-    [medals]
+  const headerMeta = useMemo(
+    () => `${formatNumber(total)} اثر ثبت‌شده`,
+    [total]
   );
 
   return (
-    <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-l from-primary/[0.14] via-surface to-surface px-6 py-8 sm:px-10">
-        <div className="pointer-events-none absolute -left-10 top-0 size-40 rounded-full bg-primary/20 blur-3xl" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
-              <Medal className="size-3.5" />
-              گالری
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-primary-deep sm:text-4xl">
-              مجموعه مدال‌ها
-            </h1>
-            <p className="mt-2 max-w-lg text-sm text-text-muted sm:text-base">
-              کاوش بصری در آرشیو مدال‌های تاریخی — جستجو، فیلتر و مشاهده جزئیات
-            </p>
-          </div>
-          {total > 0 && (
-            <div className="rounded-2xl border border-primary/15 bg-surface/80 px-4 py-3 text-center shadow-sm backdrop-blur">
-              <p className="text-2xl font-semibold tabular-nums text-primary-deep">
-                {total}
-              </p>
-              <p className="text-[11px] text-text-muted">اثر در مجموعه</p>
-            </div>
-          )}
+    <div>
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
+          <p className="museum-label text-primary">Collection Catalog</p>
+          <h1 className="museum-serif mt-3 text-4xl font-semibold text-primary-deep sm:text-5xl">
+            آرشیو مدال‌ها
+          </h1>
+          <p className="mt-3 text-sm text-text-muted">{headerMeta}</p>
         </div>
-      </div>
+      </header>
 
-      {!isLoading && slides.length > 0 && (
-        <HeroSlider slides={slides} heightClass="h-[min(52vh,24rem)]" />
-      )}
-
-      <div className="flex flex-wrap gap-3 rounded-2xl border border-border/70 bg-surface/70 p-3 shadow-sm backdrop-blur">
-        <form
-          className="flex min-w-[200px] flex-1 gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSearch(searchInput);
-            setPage(1);
-          }}
-        >
-          <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-text-subtle" />
-            <Input
-              placeholder="جستجو در نام، کشور، کاتالوگ…"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="border-border/80 bg-surface pr-9"
-            />
-          </div>
-          <Button type="submit" className="shrink-0">
-            جستجو
-          </Button>
-        </form>
-        <select
-          className="h-10 rounded-xl border border-border/80 bg-surface px-3 text-sm"
-          value={category ?? ""}
-          onChange={(e) => {
-            setCategory(e.target.value ? Number(e.target.value) : undefined);
-            setPage(1);
-          }}
-        >
-          <option value="">همه دسته‌ها</option>
-          {categoriesData?.results?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {isError ? (
-        <div className="rounded-2xl border border-danger/30 bg-danger-bg/40 px-4 py-8 text-center">
-          <p className="text-sm font-medium text-danger">خطا در دریافت مدال‌ها از سرور</p>
-          <p className="mt-1 text-xs text-text-muted">
-            {(error as Error)?.message || "لطفاً اتصال و لاگین را بررسی کنید."}
-          </p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm text-white"
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10">
+        <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-3 sm:flex-row sm:items-center">
+          <form
+            className="flex min-w-0 flex-1 gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearch(searchInput);
+              setPage(1);
+            }}
           >
-            تلاش مجدد
-          </button>
-        </div>
-      ) : isLoading ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
-          ))}
-        </div>
-      ) : medals.length === 0 ? (
-        <EmptyState
-          title="نتیجه‌ای یافت نشد"
-          description="فیلترها را تغییر دهید یا عبارت دیگری جستجو کنید."
-        />
-      ) : (
-        <>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {medals.map((m, i) => (
-              <GalleryCard
-                key={m.id}
-                href={`/museum/medals/${m.id}`}
-                name={m.name}
-                meta={`${m.country || "—"} · ${m.year ?? "—"}`}
-                badge={m.material || m.category_detail?.name}
-                image={imgOf(m as { primary_image?: string | null })}
-                index={i}
-                kind="medal"
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-text-subtle" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="جستجو در نام، کشور، کاتالوگ…"
+                className="h-11 w-full rounded-sm border border-border bg-background pr-10 pl-3 text-sm outline-none focus:border-primary"
               />
+            </div>
+            <button
+              type="submit"
+              className="h-11 shrink-0 rounded-sm bg-primary px-5 text-sm font-medium text-white hover:bg-primary-deep"
+            >
+              جستجو
+            </button>
+          </form>
+          <select
+            className="h-11 rounded-sm border border-border bg-background px-3 text-sm"
+            value={category ?? ""}
+            onChange={(e) => {
+              setCategory(e.target.value ? Number(e.target.value) : undefined);
+              setPage(1);
+            }}
+          >
+            <option value="">همه دسته‌ها</option>
+            {categoriesData?.results?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-11 rounded-sm border border-border bg-background px-3 text-sm"
+            value={ordering}
+            onChange={(e) => {
+              setOrdering(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="-created_at">جدیدترین</option>
+            <option value="created_at">قدیمی‌ترین</option>
+            <option value="-year">سال (نزولی)</option>
+            <option value="year">سال (صعودی)</option>
+            <option value="name">الفبایی</option>
+          </select>
+        </div>
+
+        {isError ? (
+          <div className="mt-12 rounded-sm border border-danger/30 bg-danger-bg/40 px-4 py-10 text-center">
+            <p className="font-medium text-danger">خطا در دریافت آرشیو</p>
+            <p className="mt-1 text-xs text-text-muted">
+              {(error as Error)?.message}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-4 rounded-sm bg-primary px-4 py-2 text-sm text-white"
+            >
+              تلاش مجدد
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="aspect-[3/4] animate-pulse rounded-sm bg-surface-muted" />
             ))}
           </div>
-          <Pagination
-            page={page}
-            pageSize={20}
-            total={total}
-            onPageChange={setPage}
-          />
-        </>
-      )}
+        ) : medals.length === 0 ? (
+          <p className="mt-16 text-center text-sm text-text-muted">
+            نتیجه‌ای یافت نشد. فیلترها را تغییر دهید.
+          </p>
+        ) : (
+          <>
+            <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
+              {medals.map((m, i) => (
+                <ObjectCard
+                  key={m.id}
+                  href={`/museum/medals/${m.id}`}
+                  name={m.name}
+                  year={m.year}
+                  country={m.country}
+                  category={m.material || m.category_detail?.name}
+                  archiveNo={m.catalog_number}
+                  image={imgOf(m)}
+                  kind="medal"
+                  index={i}
+                />
+              ))}
+            </div>
+            <div className="mt-10">
+              <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+            </div>
+          </>
+        )}
+      </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-[50vh] animate-pulse bg-surface-muted" />}>
+      <MuseumMedalsArchivePage />
+    </Suspense>
   );
 }
