@@ -36,18 +36,51 @@ export function formatDate(iso: string | null | undefined): string {
 }
 
 /**
- * Resolve media URL from API (relative `/media/...` or absolute).
- * Returns null when value is empty / placeholder-like.
+ * Extract a usable media path from API fields that may be string or nested object.
  */
-export function resolveMediaUrl(
-  src?: string | null
-): string | null {
-  if (!src) return null;
-  const s = String(src).trim();
-  if (!s || s.length <= 2 || s === "0" || s.startsWith("0.")) return null;
-  if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("data:")) {
-    return s;
+function extractMediaPath(src: unknown): string | null {
+  if (src == null) return null;
+  if (typeof src === "string") {
+    const s = src.trim();
+    return s || null;
   }
-  if (s.startsWith("/")) return s;
-  return `/${s.replace(/^\.\//, "")}`;
+  if (typeof src === "object") {
+    const o = src as Record<string, unknown>;
+    for (const key of [
+      "image_url",
+      "file_url",
+      "url",
+      "image",
+      "file",
+      "src",
+      "path",
+    ]) {
+      const v = o[key];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve media URL from API (relative `/media/...` or absolute).
+ * Accepts string or nested media object. Returns null for empty / invalid.
+ * Relative `/media/...` stays same-origin so Next rewrites to Django.
+ */
+export function resolveMediaUrl(src?: unknown): string | null {
+  const raw = extractMediaPath(src);
+  if (!raw) return null;
+  // Never allow [object Object] to leak into <img src>
+  if (raw === "[object Object]" || raw.includes("[object Object]")) return null;
+  if (raw.length <= 2 || raw === "0" || raw.startsWith("0.")) return null;
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("data:")
+  ) {
+    return raw;
+  }
+  if (raw.startsWith("/")) return raw;
+  if (raw.startsWith("media/")) return `/${raw}`;
+  return `/${raw.replace(/^\.\//, "")}`;
 }

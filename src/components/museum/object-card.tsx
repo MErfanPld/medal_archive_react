@@ -11,7 +11,7 @@ export interface ObjectCardProps {
   country?: string | null;
   category?: string | null;
   archiveNo?: string | null;
-  image?: string | null;
+  image?: unknown;
   kind?: "medal" | "coin";
   size?: "sm" | "md" | "lg";
   index?: number;
@@ -74,16 +74,15 @@ export function ObjectCard({
           <ItemPlaceholder kind={kind} label={name.charAt(0)} />
         </div>
 
+        {/* hover veil */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1a1614]/85 via-[#1a1614]/10 to-transparent opacity-80 transition duration-500 group-hover:opacity-95" />
 
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           {archiveNo ? (
-            <p className="museum-label mb-1.5 text-white/55">{archiveNo}</p>
+            <p className="museum-label text-white/40">MA · {archiveNo}</p>
           ) : null}
-          <h3 className="text-base font-semibold leading-snug text-white sm:text-lg">
-            {name}
-          </h3>
-          <p className="mt-1.5 text-xs text-white/70 sm:text-sm">
+          <p className="mt-1 font-semibold text-white line-clamp-2">{name}</p>
+          <p className="mt-1 text-xs text-white/55">
             {[country, year, category].filter(Boolean).join(" · ")}
           </p>
         </div>
