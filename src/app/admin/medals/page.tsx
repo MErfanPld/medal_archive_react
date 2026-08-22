@@ -26,7 +26,32 @@ import { Pagination } from "@/components/ui/pagination";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
+import { resolvePrimaryImage } from "@/lib/utils";
 import type { Medal } from "@/types/api";
+
+function MedalThumb({ medal }: { medal: Medal }) {
+  const src = resolvePrimaryImage(medal);
+  if (!src) {
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+        {medal.name.slice(0, 2)}
+      </div>
+    );
+  }
+  return (
+    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-cover"
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+    </div>
+  );
+}
 
 export default function MedalsPage() {
   const [search, setSearch] = useState("");
@@ -37,7 +62,12 @@ export default function MedalsPage() {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["medals", { search, page }],
-    queryFn: () => getMedals({ search: search || undefined, page, ordering: "-created_at" }),
+    queryFn: () =>
+      getMedals({
+        search: search || undefined,
+        page,
+        ordering: "-created_at",
+      }),
   });
 
   const deleteMutation = useMutation({
@@ -93,7 +123,9 @@ export default function MedalsPage() {
             <MedalIcon className="h-7 w-7 text-primary" />
             مدال‌ها
           </h1>
-          <p className="mt-1 text-sm text-text-muted">{total} مدال در آرشیو</p>
+          <p className="mt-1 text-sm text-text-muted">
+            {total} مدال در آرشیو
+          </p>
         </div>
         <Button asChild>
           <Link href="/admin/medals/new">
@@ -150,9 +182,7 @@ export default function MedalsPage() {
                   >
                     <td className="p-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-                          {m.name.slice(0, 2)}
-                        </div>
+                        <MedalThumb medal={m} />
                         <div>
                           <Link
                             href={`/admin/medals/${m.id}`}
@@ -177,12 +207,18 @@ export default function MedalsPage() {
                     <td className="p-3">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/admin/medals/${m.id}`} aria-label="مشاهده">
+                          <Link
+                            href={`/admin/medals/${m.id}`}
+                            aria-label="مشاهده"
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/admin/medals/${m.id}/edit`} aria-label="ویرایش">
+                          <Link
+                            href={`/admin/medals/${m.id}/edit`}
+                            aria-label="ویرایش"
+                          >
                             <Pencil className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -208,16 +244,19 @@ export default function MedalsPage() {
               <Card key={m.id} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <Link
-                        href={`/admin/medals/${m.id}`}
-                        className="font-semibold hover:text-primary"
-                      >
-                        {m.name}
-                      </Link>
-                      <p className="mt-1 text-xs text-text-muted">
-                        {m.country} · {m.year}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <MedalThumb medal={m} />
+                      <div>
+                        <Link
+                          href={`/admin/medals/${m.id}`}
+                          className="font-semibold hover:text-primary"
+                        >
+                          {m.name}
+                        </Link>
+                        <p className="mt-1 text-xs text-text-muted">
+                          {m.country} · {m.year}
+                        </p>
+                      </div>
                     </div>
                     <Badge variant={authenticityVariant(m.authenticity)}>
                       {authenticityLabel(m.authenticity)}
