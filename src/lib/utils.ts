@@ -65,22 +65,71 @@ function extractMediaPath(src: unknown): string | null {
 /**
  * Resolve media URL from API (relative `/media/...` or absolute).
  * Accepts string or nested media object. Returns null for empty / invalid.
- * Relative `/media/...` stays same-origin so Next rewrites to Django.
+ *
+ * Strategy:
+ * - Absolute http(s) pointing at local Django media → convert to `/media/...`
+ *   so Next.js rewrite (next.config) proxies to the backend (avoids CORS / wrong host).
+ * - Other absolute URLs left as-is.
+ * - Relative paths normalized under `/media/` when missing the prefix.
  */
 export function resolveMediaUrl(src?: unknown): string | null {
   const raw = extractMediaPath(src);
   if (!raw) return null;
-  // Never allow [object Object] to leak into <img src>
   if (raw === "[object Object]" || raw.includes("[object Object]")) return null;
   if (raw.length <= 2 || raw === "0" || raw.startsWith("0.")) return null;
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("data:")
-  ) {
-    return raw;
+
+  if (raw.startsWith("data:")) return raw;
+
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    try {
+      const u = new URL(raw);
+      // Local backend media → same-origin path for Next rewrite
+      if (
+        u.pathname.startsWith("/media/") &&
+        (u.hostname === "127.0.0.1" ||
+          u.hostname === "localhost" ||
+          u.hostname === "0.0.0.0")
+      ) {
+        return u.pathname + u.search;
+      }
+      return raw;
+    } catch {
+      return raw;
+    }
   }
-  if (raw.startsWith("/")) return raw;
-  if (raw.startsWith("media/")) return `/${raw}`;
-  return `/${raw.replace(/^\.\//, "")}`;
+
+  let path = raw.replace(/^\.\//, "");
+  if (!path.startsWith("/")) path = `/${path}`;
+
+  // Django FileField often returns path relative to MEDIA_ROOT without /media
+  if (
+    !path.startsWith("/media/") &&
+    !path.startsWith("/_next/") &&
+    !path.startsWith("/api/")
+  ) {
+    if (
+      path.startsWith("/medals/") ||
+      path.startsWith("/coins/") ||
+      path.startsWith("/images/") ||
+      path.startsWith("/uploads/")
+    ) {
+      path = `/media${path}`;
+    } else if (!path.includes(".") && path.length < 8) {
+      return null;
+    }
+  }
+
+  return path;
+}
+
+/** Prefer primary_image_url then primary_image (string or nested). */
+export function resolvePrimaryImage(item: {
+  primary_image?: unknown;
+  primary_image_url?: unknown;
+}): string | null {
+  return (
+    resolveMediaUrl(item.primary_image_url) ||
+    resolveMediaUrl(item.primary_image) ||
+    null
+  );
 }
