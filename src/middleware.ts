@@ -9,7 +9,7 @@ import type { NextRequest } from "next/server";
  * via Zustand persist, so we also accept a lightweight cookie set on login.
  */
 
-const PUBLIC_PATHS = ["/", "/login", "/invite", "/activate", "/museum"];
+const PUBLIC_PATHS = ["/", "/login", "/invite", "/activate"];
 const AUTH_COOKIE = "medal_auth";
 
 export function middleware(request: NextRequest) {
@@ -27,15 +27,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Museum is public. Admin remains protected.
-  const isProtected = pathname.startsWith("/admin");
+  // Museum + Admin require login. Unauthenticated users never see museum UI.
+  const isProtected =
+    pathname.startsWith("/admin") || pathname.startsWith("/museum");
 
   if (!isProtected) {
     return NextResponse.next();
   }
 
-  // Prefer cookie set by the client after successful login.
-  // Fallback: let the client-side AuthGuard handle redirect (no hard block).
+  // Cookie set by the client after successful login (see auth-store).
   const hasAuthHint = Boolean(request.cookies.get(AUTH_COOKIE)?.value);
 
   if (!hasAuthHint) {
@@ -49,6 +49,10 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except static files and API routes
+     * that Next.js serves itself.
+     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
