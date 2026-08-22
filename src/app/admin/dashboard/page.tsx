@@ -18,7 +18,12 @@ import { getMedals } from "@/lib/data/medals";
 import { getCategories } from "@/lib/data/categories";
 import { getUsers } from "@/lib/data/users";
 import { authenticityLabel, authenticityVariant } from "@/lib/medal-labels";
-import { formatNumber, formatDate, cn } from "@/lib/utils";
+import {
+  formatNumber,
+  formatDate,
+  cn,
+  resolvePrimaryImage,
+} from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -186,7 +191,7 @@ export default function DashboardPage() {
   const totalUsers = usersQ.data?.count ?? usersQ.data?.results?.length ?? 0;
 
   const withImage = useMemo(
-    () => medals.filter((m) => m.primary_image).length,
+    () => medals.filter((m) => resolvePrimaryImage(m)).length,
     [medals]
   );
 
@@ -396,38 +401,48 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ul className="divide-y divide-border">
-              {recent.map((m) => (
-                <li key={m.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                  <div className="medal-thumb">
-                    {m.primary_image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.primary_image} alt="" />
-                    ) : (
-                      <Medal className="size-4 text-text-subtle" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/admin/medals/${m.id}`}
-                      className="block truncate text-sm font-medium text-text hover:text-primary"
-                    >
-                      {m.name}
-                    </Link>
-                    <p className="truncate text-xs text-text-muted">
-                      {[
-                        m.category_detail?.name,
-                        m.country,
-                        m.year != null ? String(m.year) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "—"}
-                    </p>
-                  </div>
-                  <Badge variant={authenticityVariant(m.authenticity)}>
-                    {authenticityLabel(m.authenticity)}
-                  </Badge>
-                </li>
-              ))}
+              {recent.map((m) => {
+                const thumb = resolvePrimaryImage(m);
+                return (
+                  <li key={m.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="medal-thumb overflow-hidden">
+                      {thumb ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={thumb}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <Medal className="size-4 text-text-subtle" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/admin/medals/${m.id}`}
+                        className="block truncate text-sm font-medium text-text hover:text-primary"
+                      >
+                        {m.name}
+                      </Link>
+                      <p className="truncate text-xs text-text-muted">
+                        {[
+                          m.category_detail?.name,
+                          m.country,
+                          m.year != null ? String(m.year) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </p>
+                    </div>
+                    <Badge variant={authenticityVariant(m.authenticity)}>
+                      {authenticityLabel(m.authenticity)}
+                    </Badge>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
