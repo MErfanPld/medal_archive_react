@@ -1,23 +1,10 @@
 /**
  * Centralized frontend authorization helpers.
  * Backend remains the final security authority.
- *
- * Roles from the API (documented):
- * - Superuser / superuser / super_admin → full access
- * - Admin / admin → users, roles, content
- * - Curator / curator → categories + medals
- * - Viewer / viewer → view-only
- *
- * Permission codenames (from OpenAPI / backend):
- * categories.view | categories.create | categories.update | categories.delete
- * medals.view | medals.create | medals.update | medals.delete
- * reports.view
- * + users / ACL related
  */
 
 import type { UserMe, RoleMini } from "@/types/api";
 
-/** Known permission codenames used for UI gating */
 export const PERMISSIONS = {
   CATEGORIES_VIEW: "categories.view",
   CATEGORIES_CREATE: "categories.create",
@@ -31,6 +18,10 @@ export const PERMISSIONS = {
   COINS_CREATE: "coins.create",
   COINS_UPDATE: "coins.update",
   COINS_DELETE: "coins.delete",
+  BANKNOTES_VIEW: "banknotes.view",
+  BANKNOTES_CREATE: "banknotes.create",
+  BANKNOTES_UPDATE: "banknotes.update",
+  BANKNOTES_DELETE: "banknotes.delete",
   REPORTS_VIEW: "reports.view",
   USERS_VIEW: "users.view",
   USERS_MANAGE: "users.manage",
@@ -41,7 +32,6 @@ export const PERMISSIONS = {
 export type PermissionCodename =
   (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
-/** Role codenames that imply full access */
 const FULL_ACCESS_ROLES = new Set([
   "superuser",
   "super_admin",
@@ -49,7 +39,6 @@ const FULL_ACCESS_ROLES = new Set([
   "admin",
 ]);
 
-/** Approximate capability matrix by role (until /me returns full permissions) */
 const ROLE_CAPABILITIES: Record<string, Set<string>> = {
   curator: new Set([
     PERMISSIONS.CATEGORIES_VIEW,
@@ -64,12 +53,17 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.COINS_CREATE,
     PERMISSIONS.COINS_UPDATE,
     PERMISSIONS.COINS_DELETE,
+    PERMISSIONS.BANKNOTES_VIEW,
+    PERMISSIONS.BANKNOTES_CREATE,
+    PERMISSIONS.BANKNOTES_UPDATE,
+    PERMISSIONS.BANKNOTES_DELETE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   viewer: new Set([
     PERMISSIONS.CATEGORIES_VIEW,
     PERMISSIONS.MEDALS_VIEW,
     PERMISSIONS.COINS_VIEW,
+    PERMISSIONS.BANKNOTES_VIEW,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   editor: new Set([
@@ -82,6 +76,9 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.COINS_VIEW,
     PERMISSIONS.COINS_CREATE,
     PERMISSIONS.COINS_UPDATE,
+    PERMISSIONS.BANKNOTES_VIEW,
+    PERMISSIONS.BANKNOTES_CREATE,
+    PERMISSIONS.BANKNOTES_UPDATE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
 };
@@ -102,14 +99,9 @@ export function isFullAccess(user: UserMe | null | undefined): boolean {
     is_staff?: boolean;
   };
   if (anyUser.is_superuser) return true;
-
   return getRoleCodes(user).some((c) => FULL_ACCESS_ROLES.has(c));
 }
 
-/**
- * Check whether the user may perform the given permission (UX only).
- * Backend remains the authority — this only gates UI.
- */
 export function hasPermission(
   user: UserMe | null | undefined,
   permission: string
@@ -158,7 +150,6 @@ export function hasRole(
   return roleCodenames.some((r) => codes.has(r.toLowerCase()));
 }
 
-/** Alias for readability in components */
 export function can(
   user: UserMe | null | undefined,
   permission: string
@@ -166,12 +157,17 @@ export function can(
   return hasPermission(user, permission);
 }
 
-/** Navigation visibility helpers */
 export function canViewMedals(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.MEDALS_VIEW);
 }
 export function canViewCoins(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.COINS_VIEW);
+}
+export function canViewBanknotes(user: UserMe | null | undefined) {
+  return (
+    hasPermission(user, PERMISSIONS.BANKNOTES_VIEW) ||
+    hasPermission(user, PERMISSIONS.COINS_VIEW)
+  );
 }
 export function canViewCategories(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.CATEGORIES_VIEW);
