@@ -498,6 +498,175 @@ export interface CoinImage {
   uploaded_at: string;
 }
 
+export interface CoinPurchaseRecord {
+  id: number;
+  purchase_date?: string | null;
+  location?: string;
+  seller?: string;
+  price?: string | null;
+  currency?: Currency;
+  notes?: string;
+  created_at: string;
+  created_by: number | null;
+}
+
+export interface CoinValuationRecord {
+  id: number;
+  value: string;
+  currency?: Currency;
+  valuation_date: string;
+  source?: string;
+  notes?: string;
+  created_at: string;
+  created_by: number | null;
+}
+
+export interface Banknote {
+  id: number;
+  name: string;
+  category_id?: number | null;
+  category_name?: string;
+  category_detail?: Category | null;
+  country?: string;
+  year?: number | null;
+  year_hijri?: number | null;
+  historical_period?: string;
+  reign_or_ruler?: string;
+  face_value?: string | null;
+  denomination?: string;
+  currency_name?: string;
+  material?: string;
+  purity?: string | null;
+  weight?: string | null;
+  length?: string | null;
+  width?: string | null;
+  thickness?: string | null;
+  shape?: string;
+  edge?: string;
+  color?: string;
+  serial_number?: string;
+  series?: string;
+  signature?: string;
+  printer?: string;
+  mint?: string;
+  maker?: string;
+  mintage?: number | null;
+  catalog_number?: string;
+  quality?: Quality;
+  quality_display?: string;
+  preservation_condition?: string;
+  authenticity?: Authenticity;
+  authenticity_display?: string;
+  is_commemorative?: boolean;
+  purchase_date?: string | null;
+  purchase_location?: string;
+  seller?: string;
+  purchase_price?: string | null;
+  purchase_currency?: Currency;
+  current_value?: string | null;
+  last_valuation_date?: string | null;
+  cabinet_number?: string;
+  drawer_number?: string;
+  box_number?: string;
+  notes?: string;
+  is_active?: boolean;
+  primary_image?: string | null;
+  primary_image_url?: string | null;
+  images_count?: string | number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface BanknoteRequest {
+  name: string;
+  category_id?: number | null;
+  country?: string;
+  year?: number | null;
+  year_hijri?: number | null;
+  historical_period?: string;
+  reign_or_ruler?: string;
+  face_value?: string | null;
+  denomination?: string;
+  currency_name?: string;
+  material?: string;
+  purity?: string | null;
+  weight?: string | null;
+  length?: string | null;
+  width?: string | null;
+  thickness?: string | null;
+  shape?: string;
+  edge?: string;
+  color?: string;
+  serial_number?: string;
+  series?: string;
+  signature?: string;
+  printer?: string;
+  mint?: string;
+  maker?: string;
+  mintage?: number | null;
+  catalog_number?: string;
+  quality?: Quality;
+  preservation_condition?: string;
+  authenticity?: Authenticity;
+  is_commemorative?: boolean;
+  purchase_date?: string | null;
+  purchase_location?: string;
+  seller?: string;
+  purchase_price?: string | null;
+  purchase_currency?: Currency;
+  current_value?: string | null;
+  last_valuation_date?: string | null;
+  cabinet_number?: string;
+  drawer_number?: string;
+  box_number?: string;
+  notes?: string;
+  is_active?: boolean;
+}
+
+export type BanknoteImageType =
+  | "front"
+  | "back"
+  | "detail"
+  | "certificate"
+  | "other";
+
+export interface BanknoteImage {
+  id: number;
+  image: string;
+  image_url: string;
+  image_type?: BanknoteImageType;
+  caption?: string;
+  ordering?: number;
+  is_primary?: boolean;
+  original_filename: string;
+  file_size: number | null;
+  uploaded_by: number | null;
+  uploaded_at: string;
+}
+
+export interface BanknotePurchaseRecord {
+  id: number;
+  purchase_date?: string | null;
+  location?: string;
+  seller?: string;
+  price?: string | null;
+  currency?: Currency;
+  notes?: string;
+  created_at: string;
+  created_by: number | null;
+}
+
+export interface BanknoteValuationRecord {
+  id: number;
+  value: string;
+  currency?: Currency;
+  valuation_date: string;
+  source?: string;
+  notes?: string;
+  created_at: string;
+  created_by: number | null;
+}
+
 export interface ApiErrorBody {
   detail?: string;
   [key: string]: unknown;
