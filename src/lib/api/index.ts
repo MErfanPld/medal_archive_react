@@ -3,6 +3,7 @@ export { authApi } from "./auth";
 export { invitesApi } from "./invites";
 export { medalsApi } from "./medals";
 export { coinsApi } from "./coins";
+export { banknotesApi } from "./banknotes";
 export { categoriesApi } from "./categories";
 export { usersApi } from "./users";
 export { reportsApi } from "./reports";
