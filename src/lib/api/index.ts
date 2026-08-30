@@ -7,3 +7,4 @@ export { banknotesApi } from "./banknotes";
 export { categoriesApi } from "./categories";
 export { usersApi } from "./users";
 export { reportsApi } from "./reports";
+export { antiquesApi } from "./antiques";
