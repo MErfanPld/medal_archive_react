@@ -5,41 +5,49 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
-  Search,
   Eye,
   Pencil,
   Trash2,
   Medal as MedalIcon,
+  ImageOff,
 } from "lucide-react";
 import { getMedals, deleteMedal } from "@/lib/data/medals";
+import { getCategories } from "@/lib/data/categories";
 import {
   authenticityLabel,
   authenticityVariant,
+  authenticityFilterOptions,
 } from "@/lib/medal-labels";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { Alert } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
-import { resolvePrimaryImage } from "@/lib/utils";
+import { resolvePrimaryImage, cn } from "@/lib/utils";
+import {
+  ListFilters,
+  FilterSearchField,
+  FilterSelect,
+  FilterViewToggle,
+} from "@/components/admin/list-filters";
 import type { Medal } from "@/types/api";
 
 function MedalThumb({ medal }: { medal: Medal }) {
   const src = resolvePrimaryImage(medal);
   if (!src) {
     return (
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-        {medal.name.slice(0, 2)}
+      <div className="medal-thumb text-text-subtle">
+        <ImageOff className="size-4" aria-hidden />
       </div>
     );
   }
   return (
-    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+    <div className="medal-thumb overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -55,17 +63,28 @@ function MedalThumb({ medal }: { medal: Medal }) {
 
 export default function MedalsPage() {
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
+  const [category, setCategory] = useState<number | undefined>();
+  const [authenticity, setAuthenticity] = useState<string | undefined>();
+  const [view, setView] = useState<"list" | "grid">("list");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["medals", { search, page }],
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories", "all"],
+    queryFn: () => getCategories({ pageSize: 100 }),
+  });
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["medals", page, search, category, authenticity],
     queryFn: () =>
       getMedals({
         search: search || undefined,
         page,
+        category,
+        authenticity,
         ordering: "-created_at",
       }),
   });
@@ -82,78 +101,82 @@ export default function MedalsPage() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4 py-12 text-center">
-        <p className="text-danger">خطا در بارگذاری مدال‌ها</p>
-        <p className="text-sm text-text-muted">
-          {(error as Error)?.message || "اتصال به سرور را بررسی کنید."}
-        </p>
-        <Button type="button" onClick={() => refetch()}>
-          تلاش مجدد
-        </Button>
-      </div>
-    );
-  }
-
   const medals = data?.results ?? [];
   const total = data?.count ?? 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-            <MedalIcon className="h-7 w-7 text-primary" />
-            مدال‌ها
-          </h1>
-          <p className="mt-1 text-sm text-text-muted">
-            {total} مدال در آرشیو
+          <h1 className="text-page-title">مدال‌ها</h1>
+          <p className="mt-1 text-caption">
+            {total > 0 ? `${total} مدال در آرشیو` : "مدیریت مجموعه مدال‌ها"}
           </p>
         </div>
         <Button asChild>
           <Link href="/admin/medals/new">
-            <Plus className="ml-2 h-4 w-4" />
+            <Plus className="size-4" />
             ثبت مدال جدید
           </Link>
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-          <Input
-            placeholder="جستجو در نام، کشور، سال..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="pr-10"
-          />
-        </div>
-      </div>
+      <ListFilters>
+        <FilterSearchField
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmit={() => {
+            setSearch(searchInput.trim());
+            setPage(1);
+          }}
+          placeholder="جستجو در نام، کشور، کاتالوگ…"
+        />
+        <FilterSelect
+          value={category != null ? String(category) : ""}
+          onChange={(v) => {
+            setCategory(v ? Number(v) : undefined);
+            setPage(1);
+          }}
+          options={(categoriesData?.results ?? []).map((c) => ({
+            value: String(c.id),
+            label: c.name,
+          }))}
+          allLabel="همه دسته‌ها"
+          aria-label="فیلتر دسته"
+        />
+        <FilterSelect
+          value={authenticity ?? ""}
+          onChange={(v) => {
+            setAuthenticity(v || undefined);
+            setPage(1);
+          }}
+          options={authenticityFilterOptions}
+          allLabel="همه اصالت‌ها"
+          aria-label="فیلتر اصالت"
+        />
+        <FilterViewToggle view={view} onChange={setView} />
+      </ListFilters>
 
-      {medals.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : isError ? (
+        <Alert variant="danger" className="flex items-center justify-between gap-3">
+          <span>
+            {(error as Error)?.message || "خطا در بارگذاری مدال‌ها"}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            تلاش مجدد
+          </Button>
+        </Alert>
+      ) : medals.length === 0 ? (
         <EmptyState
           title="مدالی یافت نشد"
           description="هنوز مدالی در این بخش ثبت نشده یا با فیلتر فعلی مطابقت ندارد."
+          icon={<MedalIcon className="size-10" />}
           action={
             <Button asChild>
               <Link href="/admin/medals/new">ثبت مدال جدید</Link>
@@ -162,105 +185,114 @@ export default function MedalsPage() {
         />
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-muted/50">
-                <tr>
-                  <th className="p-3 text-right font-medium">مدال</th>
-                  <th className="p-3 text-right font-medium">کشور</th>
-                  <th className="p-3 text-right font-medium">سال</th>
-                  <th className="p-3 text-right font-medium">جنس</th>
-                  <th className="p-3 text-right font-medium">اصالت</th>
-                  <th className="p-3 text-right font-medium">عملیات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {medals.map((m: Medal) => (
-                  <tr
-                    key={m.id}
-                    className="border-t border-border transition-colors hover:bg-surface-muted/30"
-                  >
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <MedalThumb medal={m} />
-                        <div>
-                          <Link
-                            href={`/admin/medals/${m.id}`}
-                            className="font-medium hover:text-primary"
-                          >
-                            {m.name}
-                          </Link>
-                          <p className="text-xs text-text-muted">
-                            {m.catalog_number}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-3">{m.country || "—"}</td>
-                    <td className="p-3">{m.year ?? "—"}</td>
-                    <td className="p-3">{m.material || "—"}</td>
-                    <td className="p-3">
-                      <Badge variant={authenticityVariant(m.authenticity)}>
-                        {authenticityLabel(m.authenticity)}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`/admin/medals/${m.id}`}
-                            aria-label="مشاهده"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`/admin/medals/${m.id}/edit`}
-                            aria-label="ویرایش"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteId(m.id)}
-                          aria-label="حذف"
-                        >
-                          <Trash2 className="h-4 w-4 text-danger" />
-                        </Button>
-                      </div>
-                    </td>
+          {view === "list" ? (
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-muted/50">
+                  <tr>
+                    <th className="p-3 text-right font-medium">مدال</th>
+                    <th className="p-3 text-right font-medium">کشور</th>
+                    <th className="p-3 text-right font-medium">سال</th>
+                    <th className="p-3 text-right font-medium">جنس</th>
+                    <th className="p-3 text-right font-medium">اصالت</th>
+                    <th className="p-3 text-right font-medium">عملیات</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {medals.map((m: Medal) => (
+                    <tr
+                      key={m.id}
+                      className="border-t border-border transition-colors hover:bg-surface-muted/30"
+                    >
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <MedalThumb medal={m} />
+                          <div>
+                            <Link
+                              href={`/admin/medals/${m.id}`}
+                              className="font-medium hover:text-primary"
+                            >
+                              {m.name}
+                            </Link>
+                            <p className="text-xs text-text-muted">
+                              {m.catalog_number}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">{m.country || "—"}</td>
+                      <td className="p-3">{m.year ?? "—"}</td>
+                      <td className="p-3">{m.material || "—"}</td>
+                      <td className="p-3">
+                        <Badge variant={authenticityVariant(m.authenticity)}>
+                          {authenticityLabel(m.authenticity)}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/admin/medals/${m.id}`}
+                              aria-label="مشاهده"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/admin/medals/${m.id}/edit`}
+                              aria-label="ویرایش"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteId(m.id)}
+                            aria-label="حذف"
+                          >
+                            <Trash2 className="h-4 w-4 text-danger" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
 
-          <div className="grid gap-4 md:hidden">
+          <div
+            className={cn(
+              "grid gap-4",
+              view === "grid"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                : "md:hidden"
+            )}
+          >
             {medals.map((m: Medal) => (
               <Card key={m.id} className="overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <MedalThumb medal={m} />
-                      <div>
-                        <Link
-                          href={`/admin/medals/${m.id}`}
-                          className="font-semibold hover:text-primary"
-                        >
-                          {m.name}
-                        </Link>
-                        <p className="mt-1 text-xs text-text-muted">
-                          {m.country} · {m.year}
-                        </p>
+                  <div className="flex items-start gap-3">
+                    <MedalThumb medal={m} />
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/admin/medals/${m.id}`}
+                        className="font-semibold hover:text-primary"
+                      >
+                        {m.name}
+                      </Link>
+                      <p className="mt-1 text-xs text-text-muted">
+                        {m.country || "—"} · {m.year ?? "—"}
+                      </p>
+                      <div className="mt-2">
+                        <Badge variant={authenticityVariant(m.authenticity)}>
+                          {authenticityLabel(m.authenticity)}
+                        </Badge>
                       </div>
                     </div>
-                    <Badge variant={authenticityVariant(m.authenticity)}>
-                      {authenticityLabel(m.authenticity)}
-                    </Badge>
                   </div>
                   <div className="mt-3 flex gap-2">
                     <Button size="sm" variant="outline" asChild>
