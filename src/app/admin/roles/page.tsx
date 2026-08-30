@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Shield, Pencil, Trash2, Eye } from "lucide-react";
+import {
+  ListFilters,
+  FilterSearchField,
+} from "@/components/admin/list-filters";
 import { getRoles, deleteRole } from "@/lib/data/users";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +25,8 @@ export default function RolesPage() {
   const canManage = hasPermission(PERMISSIONS.ROLES_MANAGE);
   const canView = hasPermission(PERMISSIONS.ROLES_VIEW) || canManage;
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["roles"],
@@ -33,6 +39,9 @@ export default function RolesPage() {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       setDeleteId(null);
     },
+    onError: () => {
+      // keep dialog open; user can retry
+    },
   });
 
   if (!canView) {
@@ -43,7 +52,17 @@ export default function RolesPage() {
     );
   }
 
-  const roles = data?.results ?? [];
+  const rolesAll = data?.results ?? [];
+  const roles = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rolesAll;
+    return rolesAll.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        (r.codename ?? "").toLowerCase().includes(q) ||
+        (r.description ?? "").toLowerCase().includes(q)
+    );
+  }, [rolesAll, search]);
 
   return (
     <div className="space-y-6">
@@ -64,6 +83,15 @@ export default function RolesPage() {
         )}
       </div>
 
+      <ListFilters>
+        <FilterSearchField
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmit={() => setSearch(searchInput.trim())}
+          placeholder="جستجو در نام یا کد نقش…"
+        />
+      </ListFilters>
+
       {isError && (
         <Alert variant="danger" title="خطا در بارگذاری">
           <button type="button" onClick={() => refetch()} className="underline">
@@ -75,21 +103,18 @@ export default function RolesPage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
           ))}
         </div>
       ) : roles.length === 0 ? (
         <EmptyState
-          title="نقشی تعریف نشده"
-          description="هنوز نقشی در سیستم ثبت نشده است."
           icon={<Shield className="size-10" />}
+          title="نقشی تعریف نشده"
+          description="هنوز هیچ نقشی در سیستم ثبت نشده است."
           action={
             canManage ? (
               <Link href="/admin/roles/new">
-                <Button>
-                  <Plus className="size-4" />
-                  ایجاد نقش
-                </Button>
+                <Button>ایجاد اولین نقش</Button>
               </Link>
             ) : undefined
           }
@@ -97,7 +122,7 @@ export default function RolesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {roles.map((role) => (
-            <Card key={role.id}>
+            <Card key={role.id} className="overflow-hidden">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">

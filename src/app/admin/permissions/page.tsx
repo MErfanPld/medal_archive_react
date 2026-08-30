@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, KeyRound, RefreshCw } from "lucide-react";
+import { KeyRound, RefreshCw } from "lucide-react";
+import {
+  ListFilters,
+  FilterSearchField,
+} from "@/components/admin/list-filters";
 import { getPermissions } from "@/lib/data/users";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +37,7 @@ export default function PermissionsPage() {
     hasPermission(PERMISSIONS.USERS_MANAGE);
 
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   const { data: permissions = [], isLoading, isError, refetch, isFetching } =
     useQuery({
@@ -92,17 +96,14 @@ export default function PermissionsPage() {
         </Button>
       </div>
 
-      <div className="panel p-3 sm:p-4">
-        <div className="relative max-w-md">
-          <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-text-subtle" />
-          <Input
-            placeholder="جستجو در نام یا codename…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pr-9"
-          />
-        </div>
-      </div>
+      <ListFilters>
+        <FilterSearchField
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmit={() => setSearch(searchInput.trim())}
+          placeholder="جستجو در نام یا codename…"
+        />
+      </ListFilters>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -140,7 +141,9 @@ export default function PermissionsPage() {
                       className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
-                        <p className="text-sm font-medium text-text">{p.name}</p>
+                        <p className="text-sm font-medium text-text">
+                          {p.name}
+                        </p>
                         {p.description && (
                           <p className="text-caption">{p.description}</p>
                         )}
