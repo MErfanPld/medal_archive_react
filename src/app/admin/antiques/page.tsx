@@ -19,7 +19,7 @@ import {
 } from "@/components/admin/list-filters";
 import { getAntiques, deleteAntique } from "@/lib/data/antiques";
 import { getCategories } from "@/lib/data/categories";
-import { formatNumber, cn, resolvePrimaryImage } from "@/lib/utils";
+import { cn, resolvePrimaryImage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +37,7 @@ import {
   authenticityVariant,
   authenticityFilterOptions,
 } from "@/lib/antique-labels";
-import type { Antique } from "@/types/api";
+import type { Antique } from "@/types/antiques";
 
 function AntiqueThumb({ item }: { item: Antique }) {
   const src = resolvePrimaryImage(item);
