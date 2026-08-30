@@ -1,14 +1,14 @@
 /**
  * Antique data layer — real API only.
  */
+import type { PaginatedResponse } from "@/types/api";
 import type {
   Antique,
   AntiqueRequest,
   AntiqueImage,
   AntiquePurchaseRecord,
   AntiqueValuationRecord,
-  PaginatedResponse,
-} from "@/types/api";
+} from "@/types/antiques";
 import { antiquesApi, type AntiqueListParams } from "@/lib/api/antiques";
 
 export type { AntiqueListParams };

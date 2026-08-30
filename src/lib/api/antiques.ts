@@ -1,12 +1,12 @@
 import { api } from "./client";
+import type { PaginatedResponse } from "@/types/api";
 import type {
   Antique,
   AntiqueRequest,
   AntiqueImage,
   AntiquePurchaseRecord,
   AntiqueValuationRecord,
-  PaginatedResponse,
-} from "@/types/api";
+} from "@/types/antiques";
 
 export interface AntiqueListParams {
   page?: number;
@@ -46,72 +46,48 @@ export const antiquesApi = {
     api.get<PaginatedResponse<Antique>>(
       `/api/antiques/${toQuery(params as Record<string, unknown>)}`
     ),
-
   retrieve: (id: number) => api.get<Antique>(`/api/antiques/${id}/`),
-
   create: (data: AntiqueRequest) => api.post<Antique>("/api/antiques/", data),
-
   update: (id: number, data: AntiqueRequest) =>
     api.put<Antique>(`/api/antiques/${id}/`, data),
-
   partialUpdate: (id: number, data: Partial<AntiqueRequest>) =>
     api.patch<Antique>(`/api/antiques/${id}/`, data),
-
   destroy: (id: number) => api.delete<void>(`/api/antiques/${id}/`),
-
   listImages: (itemPk: number, page?: number) =>
     api.get<PaginatedResponse<AntiqueImage>>(
       `/api/antiques/${itemPk}/images/${toQuery(page != null ? { page } : undefined)}`
     ),
-
   retrieveImage: (itemPk: number, id: number) =>
     api.get<AntiqueImage>(`/api/antiques/${itemPk}/images/${id}/`),
-
   createImage: (itemPk: number, formData: FormData) =>
     api.postForm<AntiqueImage>(`/api/antiques/${itemPk}/images/`, formData),
-
   updateImage: (itemPk: number, id: number, formData: FormData) =>
     api.put<AntiqueImage>(`/api/antiques/${itemPk}/images/${id}/`, formData),
-
   partialUpdateImage: (
     itemPk: number,
     id: number,
     data: FormData | Record<string, unknown>
   ) => api.patch<AntiqueImage>(`/api/antiques/${itemPk}/images/${id}/`, data),
-
   destroyImage: (itemPk: number, id: number) =>
     api.delete<void>(`/api/antiques/${itemPk}/images/${id}/`),
-
   listPurchases: (itemPk: number, page?: number) =>
     api.get<PaginatedResponse<AntiquePurchaseRecord>>(
       `/api/antiques/${itemPk}/purchases/${toQuery(page != null ? { page } : undefined)}`
     ),
-
   retrievePurchase: (itemPk: number, id: number) =>
     api.get<AntiquePurchaseRecord>(`/api/antiques/${itemPk}/purchases/${id}/`),
-
   createPurchase: (itemPk: number, data: Partial<AntiquePurchaseRecord>) =>
     api.post<AntiquePurchaseRecord>(`/api/antiques/${itemPk}/purchases/`, data),
-
   destroyPurchase: (itemPk: number, id: number) =>
     api.delete<void>(`/api/antiques/${itemPk}/purchases/${id}/`),
-
   listValuations: (itemPk: number, page?: number) =>
     api.get<PaginatedResponse<AntiqueValuationRecord>>(
       `/api/antiques/${itemPk}/valuations/${toQuery(page != null ? { page } : undefined)}`
     ),
-
   retrieveValuation: (itemPk: number, id: number) =>
-    api.get<AntiqueValuationRecord>(
-      `/api/antiques/${itemPk}/valuations/${id}/`
-    ),
-
+    api.get<AntiqueValuationRecord>(`/api/antiques/${itemPk}/valuations/${id}/`),
   createValuation: (itemPk: number, data: Partial<AntiqueValuationRecord>) =>
-    api.post<AntiqueValuationRecord>(
-      `/api/antiques/${itemPk}/valuations/`,
-      data
-    ),
-
+    api.post<AntiqueValuationRecord>(`/api/antiques/${itemPk}/valuations/`, data),
   destroyValuation: (itemPk: number, id: number) =>
     api.delete<void>(`/api/antiques/${itemPk}/valuations/${id}/`),
 };
