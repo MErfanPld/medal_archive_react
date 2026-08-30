@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { User, Palette, Camera } from "lucide-react";
-import { useAuthStore } from "@/stores/auth-store";
+import { useAuthStore, refreshCurrentUser } from "@/stores/auth-store";
 import {
   usePreferencesStore,
   ACCENT_PRESETS,
@@ -11,6 +11,8 @@ import {
   type FontScale,
   type ColorMode,
 } from "@/stores/preferences-store";
+import { usersApi } from "@/lib/api/users";
+import { ApiError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +24,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
@@ -29,12 +32,12 @@ type ProfileFormValues = {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
 };
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const isAuthHydrated = useAuthStore((s) => s.isHydrated);
   const toast = useToast();
 
   const accentId = usePreferencesStore((s) => s.accentId);
@@ -47,10 +50,27 @@ export default function SettingsPage() {
   const isHydrated = usePreferencesStore((s) => s.isHydrated);
 
   const [saving, setSaving] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
     if (isHydrated) applyToDocument();
   }, [isHydrated, applyToDocument]);
+
+  useEffect(() => {
+    if (!isAuthHydrated) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingProfile(true);
+      try {
+        await refreshCurrentUser();
+      } finally {
+        if (!cancelled) setLoadingProfile(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthHydrated]);
 
   const {
     register,
@@ -59,41 +79,55 @@ export default function SettingsPage() {
     reset,
   } = useForm<ProfileFormValues>({
     defaultValues: {
-      first_name: user?.first_name ?? "",
-      last_name: user?.last_name ?? "",
-      email: user?.email ?? "",
-      phone: "",
+      first_name: "",
+      last_name: "",
+      email: "",
     },
   });
 
   useEffect(() => {
-    if (user) {
-      reset({
-        first_name: user.first_name ?? "",
-        last_name: user.last_name ?? "",
-        email: user.email ?? "",
-        phone: "",
-      });
-    }
+    if (!user) return;
+    reset({
+      first_name: user.first_name ?? "",
+      last_name: user.last_name ?? "",
+      email: user.email ?? "",
+    });
   }, [user, reset]);
 
   const onSaveProfile = handleSubmit(async (values) => {
+    if (!user?.id) {
+      toast.error("نشست کاربری معتبر نیست. دوباره وارد شوید.");
+      return;
+    }
     setSaving(true);
     try {
-      // TODO: وقتی endpoint به‌روزرسانی پروفایل در Backend موجود شد:
-      // await usersApi.updateMe({ first_name, last_name, email, phone })
-      if (user) {
-        setUser({
-          ...user,
-          first_name: values.first_name,
-          last_name: values.last_name,
-          email: values.email || null,
-        });
-      }
-      toast.success("تغییرات پروفایل ذخیره شد");
-      reset(values);
-    } catch {
-      toast.error("خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.");
+      const updated = await usersApi.partialUpdate(user.id, {
+        first_name: values.first_name.trim(),
+        last_name: values.last_name.trim(),
+        email: values.email.trim() || null,
+      });
+
+      setUser({
+        ...user,
+        first_name: updated.first_name ?? values.first_name,
+        last_name: updated.last_name ?? values.last_name,
+        email: updated.email ?? (values.email.trim() || null),
+      });
+
+      await refreshCurrentUser();
+
+      toast.success("پروفایل با موفقیت ذخیره شد");
+      reset({
+        first_name: values.first_name.trim(),
+        last_name: values.last_name.trim(),
+        email: values.email.trim(),
+      });
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -131,9 +165,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-8">
           <fieldset>
-            <legend className="mb-3 text-sm font-medium text-text">
-              رنگ تم
-            </legend>
+            <legend className="mb-3 text-sm font-medium text-text">رنگ تم</legend>
             <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="رنگ تم">
               {ACCENT_PRESETS.map((p) => {
                 const selected = accentId === p.id;
@@ -165,30 +197,16 @@ export default function SettingsPage() {
           </fieldset>
 
           <div>
-            <Label id="font-scale-label" className="mb-3 block">
-              اندازه فونت
-            </Label>
-            <div
-              className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1"
-              role="group"
-              aria-labelledby="font-scale-label"
-            >
-              {(
-                [
-                  { id: "sm", label: "کوچک" },
-                  { id: "md", label: "متوسط" },
-                  { id: "lg", label: "بزرگ" },
-                ] as const
-              ).map((opt) => (
+            <Label id="font-scale-label" className="mb-3 block">اندازه فونت</Label>
+            <div className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1" role="group" aria-labelledby="font-scale-label">
+              {([{ id: "sm", label: "کوچک" }, { id: "md", label: "متوسط" }, { id: "lg", label: "بزرگ" }] as const).map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setFontScale(opt.id as FontScale)}
                   className={cn(
                     "rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                    fontScale === opt.id
-                      ? "bg-surface text-text shadow-sm"
-                      : "text-text-muted hover:text-text"
+                    fontScale === opt.id ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
                   )}
                   aria-pressed={fontScale === opt.id}
                 >
@@ -199,30 +217,16 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <Label id="color-mode-label" className="mb-3 block">
-              حالت نمایش
-            </Label>
-            <div
-              className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1"
-              role="group"
-              aria-labelledby="color-mode-label"
-            >
-              {(
-                [
-                  { id: "light", label: "روشن" },
-                  { id: "dark", label: "تیره" },
-                  { id: "system", label: "سیستم" },
-                ] as const
-              ).map((opt) => (
+            <Label id="color-mode-label" className="mb-3 block">حالت نمایش</Label>
+            <div className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1" role="group" aria-labelledby="color-mode-label">
+              {([{ id: "light", label: "روشن" }, { id: "dark", label: "تیره" }, { id: "system", label: "سیستم" }] as const).map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setColorMode(opt.id as ColorMode)}
                   className={cn(
                     "rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                    colorMode === opt.id
-                      ? "bg-surface text-text shadow-sm"
-                      : "text-text-muted hover:text-text"
+                    colorMode === opt.id ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
                   )}
                   aria-pressed={colorMode === opt.id}
                 >
@@ -230,9 +234,6 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-text-subtle">
-              حالت تیره از توکن‌های موجود در سیستم طراحی استفاده می‌کند.
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -244,112 +245,71 @@ export default function SettingsPage() {
             <CardTitle>پروفایل</CardTitle>
           </div>
           <CardDescription>
-            اطلاعات حساب کاربری شما. نام کاربری و نقش فقط خواندنی هستند.
+            اطلاعات حساب از API بارگذاری می‌شود. نام کاربری و نقش فقط خواندنی هستند.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSaveProfile} className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div
-                className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-lg font-semibold text-primary"
-                aria-hidden
-              >
-                {initials}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-text">
-                  {user?.first_name || user?.last_name
-                    ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
-                    : user?.username}
-                </p>
-                <p className="text-xs text-text-muted">{user?.email || "—"}</p>
-                <button
-                  type="button"
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-50"
-                  disabled
-                  title="آپلود تصویر پس از پشتیبانی Backend فعال می‌شود"
-                >
-                  <Camera className="size-3.5" />
-                  تغییر تصویر (به‌زودی)
-                </button>
-              </div>
+          {loadingProfile && !user ? (
+            <div className="space-y-4">
+              <Skeleton className="h-16 w-16 rounded-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>نام کاربری</Label>
-                <Input
-                  value={user?.username ?? ""}
-                  disabled
-                  dir="ltr"
-                  className="mt-1.5"
-                />
-              </div>
-              <div>
-                <Label>نقش</Label>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {user?.roles?.length ? (
-                    user.roles.map((r) => (
-                      <Badge key={r.id} variant="primary">
-                        {r.name}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-text-muted">{rolesLabel}</span>
-                  )}
+          ) : (
+            <form onSubmit={onSaveProfile} className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-lg font-semibold text-primary" aria-hidden>
+                  {initials}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text">
+                    {user?.first_name || user?.last_name
+                      ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
+                      : user?.username}
+                  </p>
+                  <p className="text-xs text-text-muted">{user?.email || "—"}</p>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="first_name">نام</Label>
-                <Input
-                  id="first_name"
-                  className="mt-1.5"
-                  {...register("first_name")}
-                />
-              </div>
-              <div>
-                <Label htmlFor="last_name">نام خانوادگی</Label>
-                <Input
-                  id="last_name"
-                  className="mt-1.5"
-                  {...register("last_name")}
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">ایمیل</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  dir="ltr"
-                  className="mt-1.5"
-                  {...register("email")}
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">شماره موبایل</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  dir="ltr"
-                  className="mt-1.5"
-                  placeholder="09xxxxxxxxx"
-                  {...register("phone")}
-                />
-                <p className="mt-1 text-xs text-text-subtle">
-                  در صورت پشتیبانی Backend ذخیره می‌شود.
-                </p>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
-              {isDirty && (
-                <span className="text-xs text-text-muted">تغییرات ذخیره نشده</span>
-              )}
-              <Button type="submit" loading={saving} disabled={saving || !isDirty}>
-                ذخیره تغییرات
-              </Button>
-            </div>
-          </form>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>نام کاربری</Label>
+                  <Input value={user?.username ?? ""} disabled dir="ltr" className="mt-1.5" />
+                </div>
+                <div>
+                  <Label>نقش</Label>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {user?.roles?.length ? (
+                      user.roles.map((r) => (
+                        <Badge key={r.id} variant="primary">{r.name}</Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-text-muted">{rolesLabel}</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="first_name">نام</Label>
+                  <Input id="first_name" className="mt-1.5" autoComplete="given-name" {...register("first_name")} />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">نام خانوادگی</Label>
+                  <Input id="last_name" className="mt-1.5" autoComplete="family-name" {...register("last_name")} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="email">ایمیل</Label>
+                  <Input id="email" type="email" dir="ltr" className="mt-1.5" autoComplete="email" {...register("email")} />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
+                {isDirty && <span className="text-xs text-text-muted">تغییرات ذخیره نشده</span>}
+                <Button type="submit" loading={saving} disabled={saving || !isDirty || !user}>
+                  ذخیره تغییرات
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
