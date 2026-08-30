@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createAntique } from "@/lib/data/antiques";
-import type { AntiqueRequest } from "@/types/api";
+import type { AntiqueRequest } from "@/types/antiques";
 import { AntiqueForm } from "@/components/admin/antique-form";
 import { Alert } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/toast";
