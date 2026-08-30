@@ -26,6 +26,24 @@ function toQuery(params?: Record<string, unknown>): string {
   return s ? `?${s}` : "";
 }
 
+/**
+ * Users + ACL endpoints (OpenAPI)
+ *
+ * Users:
+ *   GET   /api/users/
+ *   POST  /api/users/               (create)
+ *   GET   /api/users/{id}/
+ *   PATCH /api/users/{id}/          (activate / profile fields)
+ *   DELETE /api/users/{id}/         (destroy)
+ *   PUT   /api/users/{id}/roles/    (replace roles)
+ *
+ * Roles:
+ *   GET/POST          /api/users/roles/
+ *   GET/PUT/PATCH/DEL /api/users/roles/{id}/
+ *
+ * Permissions:
+ *   GET /api/users/permissions/
+ */
 export const usersApi = {
   list: (params?: UserListParams) =>
     api.get<PaginatedResponse<User>>(`/api/users/${toQuery(params)}`),
@@ -37,6 +55,17 @@ export const usersApi = {
 
   setActive: (id: number, is_active: boolean) =>
     api.patch<User>(`/api/users/${id}/`, { is_active }),
+
+  /** Partial update (profile fields, is_active, …) — PATCH /api/users/{id}/ */
+  partialUpdate: (
+    id: number,
+    data: Partial<{
+      first_name: string;
+      last_name: string;
+      email: string | null;
+      is_active: boolean;
+    }>
+  ) => api.patch<User>(`/api/users/${id}/`, data),
 
   destroy: (id: number) => api.delete<void>(`/api/users/${id}/`),
 
