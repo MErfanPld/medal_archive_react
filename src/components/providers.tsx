@@ -5,10 +5,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ToastProvider } from "@/components/ui/toast";
 import { usePreferencesStore } from "@/stores/preferences-store";
 
-/**
- * Applies persisted theme only after mount so SSR HTML and the first
- * client render stay in sync (no documentElement style during hydration).
- */
 function PreferencesBootstrap({ children }: { children: ReactNode }) {
   const applyToDocument = usePreferencesStore((s) => s.applyToDocument);
   const setHydrated = usePreferencesStore((s) => s.setHydrated);
@@ -39,9 +35,11 @@ export function Providers({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000,
+            staleTime: 2 * 60 * 1000,
+            gcTime: 10 * 60 * 1000,
             retry: 1,
             refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
           },
         },
       })

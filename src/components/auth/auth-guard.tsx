@@ -10,11 +10,23 @@ interface AuthGuardProps {
   fallback?: ReactNode;
 }
 
+/**
+ * Client-side protection. Middleware only checks cookie hint;
+ * this guard validates JWT session via Zustand.
+ *
+ * Performance: if persisted session already has token+user, render
+ * immediately and refresh /me in the background (non-blocking).
+ */
 export function AuthGuard({ children, permission, fallback }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { accessToken, user, isHydrated, hasPermission } = useAuthStore();
-  const [checking, setChecking] = useState(true);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+
+  const hasCachedSession = Boolean(accessToken && user);
+  const [hardChecking, setHardChecking] = useState(!hasCachedSession);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -28,18 +40,34 @@ export function AuthGuard({ children, permission, fallback }: AuthGuardProps) {
         return;
       }
 
-      if (!user) {
-        await refreshCurrentUser();
-      }
-
-      if (cancelled) return;
-
-      if (!useAuthStore.getState().user) {
-        router.replace("/login");
+      // Fast path: cached user → show UI, refresh profile in background
+      if (user) {
+        setHardChecking(false);
+        void refreshCurrentUser().then(() => {
+          if (cancelled) return;
+          const state = useAuthStore.getState();
+          if (!state.accessToken || !state.user) {
+            router.replace(
+              `/login?next=${encodeURIComponent(pathname || "/admin")}`
+            );
+          }
+        });
         return;
       }
 
-      setChecking(false);
+      // No cached user → must wait for /me
+      await refreshCurrentUser();
+      if (cancelled) return;
+
+      const state = useAuthStore.getState();
+      if (!state.accessToken || !state.user) {
+        router.replace(
+          `/login?next=${encodeURIComponent(pathname || "/admin")}`
+        );
+        return;
+      }
+
+      setHardChecking(false);
     }
 
     verify();
@@ -48,7 +76,7 @@ export function AuthGuard({ children, permission, fallback }: AuthGuardProps) {
     };
   }, [isHydrated, accessToken, user, pathname, router]);
 
-  if (!isHydrated || checking) {
+  if (!isHydrated || (hardChecking && !hasCachedSession)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">

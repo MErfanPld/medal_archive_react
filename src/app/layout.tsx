@@ -7,7 +7,8 @@ const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
   variable: "--font-vazirmatn",
   display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -28,8 +29,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Theme CSS variables are applied to <html> after client mount (preferences-store).
-  // suppressHydrationWarning: browser extensions may inject attributes (e.g. cz-shortcut-listen).
   return (
     <html
       lang="fa"
