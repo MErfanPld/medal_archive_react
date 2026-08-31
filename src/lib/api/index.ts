@@ -8,3 +8,4 @@ export { categoriesApi } from "./categories";
 export { usersApi } from "./users";
 export { reportsApi } from "./reports";
 export { antiquesApi } from "./antiques";
+export { knivesApi } from "./knives";
