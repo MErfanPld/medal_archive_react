@@ -77,46 +77,37 @@ export interface KnifeRequest {
   is_active?: boolean;
 }
 
-export type KnifeImageType =
-  | "front"
-  | "back"
-  | "detail"
-  | "certificate"
-  | "other";
-
 export interface KnifeImage {
   id: number;
-  image: string;
-  image_url: string;
-  image_type?: KnifeImageType;
-  caption?: string;
-  ordering?: number;
+  knife?: number;
+  image?: string;
+  image_url?: string | null;
+  image_type?: string;
   is_primary?: boolean;
-  original_filename: string;
-  file_size: number | null;
-  uploaded_by: number | null;
-  uploaded_at: string;
+  caption?: string;
+  order?: number;
+  created_at?: string;
 }
 
 export interface KnifePurchaseRecord {
   id: number;
+  knife?: number;
   purchase_date?: string | null;
-  location?: string;
+  purchase_location?: string;
   seller?: string;
   price?: string | null;
   currency?: Currency;
   notes?: string;
-  created_at: string;
-  created_by: number | null;
+  created_at?: string;
 }
 
 export interface KnifeValuationRecord {
   id: number;
-  value: string;
+  knife?: number;
+  valuation_date?: string | null;
+  value?: string | null;
   currency?: Currency;
-  valuation_date: string;
-  source?: string;
+  valuator?: string;
   notes?: string;
-  created_at: string;
-  created_by: number | null;
+  created_at?: string;
 }
