@@ -5,3 +5,4 @@ export * from "./reports";
 export * from "./antiques";
 export * from "./knives";
 export * from "./rings";
+export * from "./seals";
