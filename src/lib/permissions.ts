@@ -1,6 +1,18 @@
 /**
  * Centralized frontend authorization helpers.
  * Backend remains the final security authority.
+ *
+ * Roles from the API (documented):
+ * - Superuser / superuser / super_admin → full access
+ * - Admin / admin → users, roles, content
+ * - Curator / curator → categories + medals
+ * - Viewer / viewer → view-only
+ *
+ * Permission codenames (from OpenAPI / backend):
+ * categories.view | categories.create | categories.update | categories.delete
+ * medals.view | medals.create | medals.update | medals.delete
+ * reports.view
+ * + users / ACL related
  */
 
 import type { UserMe, RoleMini } from "@/types/api";
@@ -31,6 +43,14 @@ export const PERMISSIONS = {
   KNIVES_CREATE: "knives.create",
   KNIVES_UPDATE: "knives.update",
   KNIVES_DELETE: "knives.delete",
+  RINGS_VIEW: "rings.view",
+  RINGS_CREATE: "rings.create",
+  RINGS_UPDATE: "rings.update",
+  RINGS_DELETE: "rings.delete",
+  SEALS_VIEW: "seals.view",
+  SEALS_CREATE: "seals.create",
+  SEALS_UPDATE: "seals.update",
+  SEALS_DELETE: "seals.delete",
   REPORTS_VIEW: "reports.view",
   USERS_VIEW: "users.view",
   USERS_MANAGE: "users.manage",
@@ -41,6 +61,7 @@ export const PERMISSIONS = {
 export type PermissionCodename =
   (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
+/** Role codenames that imply full access */
 const FULL_ACCESS_ROLES = new Set([
   "superuser",
   "super_admin",
@@ -48,6 +69,7 @@ const FULL_ACCESS_ROLES = new Set([
   "admin",
 ]);
 
+/** Approximate capability matrix by role (until /me returns full permissions) */
 const ROLE_CAPABILITIES: Record<string, Set<string>> = {
   curator: new Set([
     PERMISSIONS.CATEGORIES_VIEW,
@@ -74,6 +96,14 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.KNIVES_CREATE,
     PERMISSIONS.KNIVES_UPDATE,
     PERMISSIONS.KNIVES_DELETE,
+    PERMISSIONS.RINGS_VIEW,
+    PERMISSIONS.RINGS_CREATE,
+    PERMISSIONS.RINGS_UPDATE,
+    PERMISSIONS.RINGS_DELETE,
+    PERMISSIONS.SEALS_VIEW,
+    PERMISSIONS.SEALS_CREATE,
+    PERMISSIONS.SEALS_UPDATE,
+    PERMISSIONS.SEALS_DELETE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   viewer: new Set([
@@ -83,6 +113,8 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.BANKNOTES_VIEW,
     PERMISSIONS.ANTIQUES_VIEW,
     PERMISSIONS.KNIVES_VIEW,
+    PERMISSIONS.RINGS_VIEW,
+    PERMISSIONS.SEALS_VIEW,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   editor: new Set([
@@ -104,6 +136,12 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.KNIVES_VIEW,
     PERMISSIONS.KNIVES_CREATE,
     PERMISSIONS.KNIVES_UPDATE,
+    PERMISSIONS.RINGS_VIEW,
+    PERMISSIONS.RINGS_CREATE,
+    PERMISSIONS.RINGS_UPDATE,
+    PERMISSIONS.SEALS_VIEW,
+    PERMISSIONS.SEALS_CREATE,
+    PERMISSIONS.SEALS_UPDATE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
 };
@@ -124,6 +162,7 @@ export function isFullAccess(user: UserMe | null | undefined): boolean {
     is_staff?: boolean;
   };
   if (anyUser.is_superuser) return true;
+
   return getRoleCodes(user).some((c) => FULL_ACCESS_ROLES.has(c));
 }
 
@@ -133,6 +172,7 @@ export function hasPermission(
 ): boolean {
   if (!user) return false;
   if (isFullAccess(user)) return true;
+
   const anyUser = user as UserMe & {
     permissions?: Array<string | { codename?: string }>;
   };
@@ -142,6 +182,7 @@ export function hasPermission(
       if (code === permission) return true;
     }
   }
+
   const codes = getRoleCodes(user);
   for (const code of codes) {
     const caps = ROLE_CAPABILITIES[code];
@@ -197,6 +238,20 @@ export function canViewAntiques(user: UserMe | null | undefined) {
 }
 export function canViewKnives(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.KNIVES_VIEW);
+}
+export function canViewRings(user: UserMe | null | undefined) {
+  return (
+    hasPermission(user, PERMISSIONS.RINGS_VIEW) ||
+    hasPermission(user, PERMISSIONS.ANTIQUES_VIEW) ||
+    hasPermission(user, PERMISSIONS.KNIVES_VIEW)
+  );
+}
+export function canViewSeals(user: UserMe | null | undefined) {
+  return (
+    hasPermission(user, PERMISSIONS.SEALS_VIEW) ||
+    hasPermission(user, PERMISSIONS.ANTIQUES_VIEW) ||
+    hasPermission(user, PERMISSIONS.KNIVES_VIEW)
+  );
 }
 export function canViewCategories(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.CATEGORIES_VIEW);
