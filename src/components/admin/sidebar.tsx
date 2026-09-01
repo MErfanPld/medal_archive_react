@@ -10,6 +10,8 @@ import {
   Banknote,
   Gem,
   Sword,
+  Package,
+  Hexagon,
   FolderOpen,
   Users,
   Shield,
@@ -32,6 +34,8 @@ import {
   canViewBanknotes,
   canViewAntiques,
   canViewKnives,
+  canViewRings,
+  canViewSeals,
   canViewCategories,
   canViewReports,
   canViewUsers,
@@ -59,52 +63,144 @@ const NAV_GROUPS: NavGroup[] = [
     id: "main",
     label: "",
     items: [
-      { href: "/admin/dashboard", label: "داشبورد", icon: LayoutDashboard, visible: () => true },
+      {
+        href: "/admin/dashboard",
+        label: "داشبورد",
+        icon: LayoutDashboard,
+        visible: () => true,
+      },
     ],
   },
   {
     id: "collection",
     label: "مجموعه",
     items: [
-      { href: "/admin/medals", label: "مدال‌ها", icon: Medal, visible: (u) => canViewMedals(u) },
-      { href: "/admin/coins", label: "سکه و پول", icon: Coins, visible: (u) => canViewCoins(u) },
-      { href: "/admin/banknotes", label: "اسکناس", icon: Banknote, visible: (u) => canViewBanknotes(u) },
-      { href: "/admin/antiques", label: "آنتیک", icon: Gem, visible: (u) => canViewAntiques(u) },
-      { href: "/admin/knives", label: "چاقو", icon: Sword, visible: (u) => canViewKnives(u) },
-      { href: "/admin/categories", label: "دسته‌بندی‌ها", icon: FolderOpen, visible: (u) => canViewCategories(u) },
+      {
+        href: "/admin/medals",
+        label: "مدال‌ها",
+        icon: Medal,
+        visible: (u) => canViewMedals(u),
+      },
+      {
+        href: "/admin/coins",
+        label: "سکه و پول",
+        icon: Coins,
+        visible: (u) => canViewCoins(u),
+      },
+      {
+        href: "/admin/banknotes",
+        label: "اسکناس",
+        icon: Banknote,
+        visible: (u) => canViewBanknotes(u),
+      },
+      {
+        href: "/admin/antiques",
+        label: "آنتیک",
+        icon: Package,
+        visible: (u) => canViewAntiques(u),
+      },
+      {
+        href: "/admin/knives",
+        label: "چاقو",
+        icon: Sword,
+        visible: (u) => canViewKnives(u),
+      },
+      {
+        href: "/admin/rings",
+        label: "انگشتر",
+        icon: Gem,
+        visible: (u) => canViewRings(u),
+      },
+      {
+        href: "/admin/seals",
+        label: "مهر",
+        icon: Hexagon,
+        visible: (u) => canViewSeals(u),
+      },
+      {
+        href: "/admin/categories",
+        label: "دسته‌بندی‌ها",
+        icon: FolderOpen,
+        visible: (u) => canViewCategories(u),
+      },
     ],
   },
   {
     id: "museum",
     label: "موزه",
     items: [
-      { href: "/museum", label: "نمای عمومی", icon: Landmark, visible: () => true },
-      { href: "/museum/medals", label: "گالری مدال‌ها", icon: ImageIcon, visible: () => true },
-      { href: "/museum/coins", label: "گالری سکه و پول", icon: Coins, visible: () => true },
+      {
+        href: "/museum",
+        label: "نمای عمومی",
+        icon: Landmark,
+        visible: () => true,
+      },
+      {
+        href: "/museum/medals",
+        label: "گالری مدال‌ها",
+        icon: ImageIcon,
+        visible: () => true,
+      },
+      {
+        href: "/museum/coins",
+        label: "گالری سکه و پول",
+        icon: Coins,
+        visible: () => true,
+      },
     ],
   },
   {
     id: "users",
     label: "مدیریت",
     items: [
-      { href: "/admin/users", label: "کاربران", icon: Users, visible: (u) => canViewUsers(u) },
-      { href: "/admin/users/invite", label: "دعوت‌ها", icon: UserPlus, visible: (u) => canManageUsers(u) },
-      { href: "/admin/roles", label: "نقش‌ها", icon: Shield, visible: (u) => canViewRoles(u) },
-      { href: "/admin/permissions", label: "دسترسی‌ها", icon: KeyRound, visible: (u) => canViewRoles(u) },
+      {
+        href: "/admin/users",
+        label: "کاربران",
+        icon: Users,
+        visible: (u) => canViewUsers(u),
+      },
+      {
+        href: "/admin/users/invite",
+        label: "دعوت‌ها",
+        icon: UserPlus,
+        visible: (u) => canManageUsers(u),
+      },
+      {
+        href: "/admin/roles",
+        label: "نقش‌ها",
+        icon: Shield,
+        visible: (u) => canViewRoles(u),
+      },
+      {
+        href: "/admin/permissions",
+        label: "دسترسی‌ها",
+        icon: KeyRound,
+        visible: (u) => canViewRoles(u),
+      },
     ],
   },
   {
     id: "reports",
     label: "تحلیل",
     items: [
-      { href: "/admin/reports", label: "گزارش‌ها", icon: BarChart3, visible: (u) => canViewReports(u) },
+      {
+        href: "/admin/reports",
+        label: "گزارش‌ها",
+        icon: BarChart3,
+        visible: (u) => canViewReports(u),
+      },
     ],
   },
   {
     id: "settings",
     label: "سیستم",
     items: [
-      { href: "/admin/settings", label: "تنظیمات", icon: Settings, visible: () => true },
+      {
+        href: "/admin/settings",
+        label: "تنظیمات",
+        icon: Settings,
+        visible: () => true,
+      },
     ],
   },
 ];
@@ -141,7 +237,10 @@ export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps)
     "کاربر";
   const roleLabel = user?.roles?.[0]?.name || "—";
   const initials =
-    [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join("").toUpperCase() ||
+    [user?.first_name?.[0], user?.last_name?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() ||
     user?.username?.[0]?.toUpperCase() ||
     "؟";
 
@@ -186,13 +285,20 @@ export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps)
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/80 px-4">
           {!collapsed && (
-            <Link href="/admin/dashboard" className="group flex items-center gap-2.5">
+            <Link
+              href="/admin/dashboard"
+              className="group flex items-center gap-2.5"
+            >
               <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white shadow-md shadow-primary/25 transition-transform duration-150 group-hover:scale-[1.03]">
                 <Medal className="size-4" aria-hidden />
               </span>
               <span className="leading-tight">
-                <span className="block text-sm font-semibold tracking-tight text-text">Medal Archive</span>
-                <span className="block text-[10px] font-medium text-text-subtle">موزه دیجیتال</span>
+                <span className="block text-sm font-semibold tracking-tight text-text">
+                  Medal Archive
+                </span>
+                <span className="block text-[10px] font-medium text-text-subtle">
+                  موزه دیجیتال
+                </span>
               </span>
             </Link>
           )}
@@ -260,7 +366,10 @@ export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps)
         </nav>
 
         {!collapsed && user && (
-          <div className="relative shrink-0 border-t border-border/80 p-3" ref={menuRef}>
+          <div
+            className="relative shrink-0 border-t border-border/80 p-3"
+            ref={menuRef}
+          >
             {userMenuOpen && (
               <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-surface shadow-lg animate-fade-up">
                 <Link
@@ -307,8 +416,12 @@ export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps)
                 {initials}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-text">{displayName}</span>
-                <span className="block truncate text-xs text-text-muted">{roleLabel}</span>
+                <span className="block truncate text-sm font-medium text-text">
+                  {displayName}
+                </span>
+                <span className="block truncate text-xs text-text-muted">
+                  {roleLabel}
+                </span>
               </span>
               <ChevronUp
                 className={cn(
