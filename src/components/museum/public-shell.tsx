@@ -9,8 +9,15 @@ import { SearchOverlay } from "@/components/museum/search-overlay";
 
 const NAV = [
   { href: "/museum", label: "موزه", exact: true },
-  { href: "/museum/medals", label: "آرشیو مدال" },
+  { href: "/museum/medals", label: "مدال" },
   { href: "/museum/coins", label: "سکه و پول" },
+  { href: "/museum/banknotes", label: "اسکناس" },
+  { href: "/museum/antiques", label: "آنتیک" },
+  { href: "/museum/knives", label: "چاقو" },
+  { href: "/museum/rings", label: "انگشتر" },
+  { href: "/museum/seals", label: "مهر" },
+  { href: "/museum/stamps", label: "تمبر" },
+  { href: "/museum/tasbih", label: "تسبیح" },
 ];
 
 export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
@@ -54,17 +61,18 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden max-w-[min(100%,42rem)] flex-wrap items-center justify-end gap-0.5 lg:flex">
             {NAV.map((item) => {
               const active = item.exact
                 ? pathname === item.href
-                : pathname === item.href || pathname.startsWith(item.href + "/");
+                : pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "rounded-full px-3.5 py-2 text-sm transition",
+                    "rounded-full px-2.5 py-1.5 text-xs transition xl:px-3 xl:text-sm",
                     active
                       ? "bg-primary/10 font-semibold text-primary-deep"
                       : "text-text-muted hover:bg-surface-muted hover:text-text"
@@ -135,23 +143,62 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
               <span className="flex size-9 items-center justify-center rounded-full bg-primary text-white">
                 <Landmark className="size-4" />
               </span>
-              <span className="text-sm font-semibold tracking-wide">Medal Archive</span>
+              <span className="text-sm font-semibold tracking-wide">
+                Medal Archive
+              </span>
             </div>
             <p className="mt-4 max-w-md text-sm leading-7 text-white/55">
-              موزه دیجیتال مدال و سکه — فضایی برای کشف، مطالعه و حفظ میراث تاریخی مجموعه‌ها.
+              موزه دیجیتال مدال و سکه — فضایی برای کشف، مطالعه و حفظ میراث
+              تاریخی مجموعه‌ها.
             </p>
           </div>
           <div>
             <p className="museum-label text-white/40">کاوش</p>
             <ul className="mt-4 space-y-2 text-sm text-white/70">
               <li>
-                <Link href="/museum/medals" className="hover:text-white">آرشیو مدال‌ها</Link>
+                <Link href="/museum/medals" className="hover:text-white">
+                  مدال
+                </Link>
               </li>
               <li>
-                <Link href="/museum/coins" className="hover:text-white">سکه و پول</Link>
+                <Link href="/museum/coins" className="hover:text-white">
+                  سکه و پول
+                </Link>
               </li>
               <li>
-                <Link href="/museum" className="hover:text-white">نمای عمومی</Link>
+                <Link href="/museum/banknotes" className="hover:text-white">
+                  اسکناس
+                </Link>
+              </li>
+              <li>
+                <Link href="/museum/antiques" className="hover:text-white">
+                  آنتیک
+                </Link>
+              </li>
+              <li>
+                <Link href="/museum/knives" className="hover:text-white">
+                  چاقو
+                </Link>
+              </li>
+              <li>
+                <Link href="/museum/rings" className="hover:text-white">
+                  انگشتر
+                </Link>
+              </li>
+              <li>
+                <Link href="/museum/seals" className="hover:text-white">
+                  مهر
+                </Link>
+              </li>
+              <li>
+                <Link href="/museum/stamps" className="hover:text-white">
+                  تمبر
+                </Link>
+              </li>
+              <li>
+                <Link href="/museum/tasbih" className="hover:text-white">
+                  تسبیح
+                </Link>
               </li>
             </ul>
           </div>
@@ -159,10 +206,14 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
             <p className="museum-label text-white/40">سامانه</p>
             <ul className="mt-4 space-y-2 text-sm text-white/70">
               <li>
-                <Link href="/login" className="hover:text-white">ورود مدیران</Link>
+                <Link href="/login" className="hover:text-white">
+                  ورود مدیران
+                </Link>
               </li>
               <li>
-                <Link href="/admin/dashboard" className="hover:text-white">پنل مدیریت</Link>
+                <Link href="/admin/dashboard" className="hover:text-white">
+                  پنل مدیریت
+                </Link>
               </li>
             </ul>
           </div>
