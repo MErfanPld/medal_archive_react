@@ -3,683 +3,392 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpLeft,
+  Search,
+  Landmark,
+  BookOpen,
+  Shield,
+  GraduationCap,
+} from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { getMedals } from "@/lib/data/medals";
 import { getCoins } from "@/lib/data/coins";
-import { getCategories } from "@/lib/data/categories";
+import { resolveMediaUrl } from "@/lib/utils";
 import { ItemPlaceholder } from "@/components/museum/item-placeholder";
-import {
-  IconMedal,
-  IconCoin,
-  IconEmblem,
-  IconLaurel,
-  IconInsignia,
-  IconAncientCoin,
-} from "@/components/museum/explore-icons";
-import { resolveMediaUrl, formatNumber, cn } from "@/lib/utils";
-import type { Coin, Medal as MedalType } from "@/types/api";
 
-function imgOf(item: {
-  primary_image?: string | null;
-  primary_image_url?: string | null;
-}) {
-  return item.primary_image_url || item.primary_image || null;
-}
+const HERO_IMG =
+  "https://images.unsplash.com/photo-1578662996442-48f60103fc96?auto=format&fit=crop&w=2400&q=80";
 
-const WALL = ["mu-w1", "mu-w2", "mu-w3", "mu-w4", "mu-w5", "mu-w6"] as const;
+const CATEGORIES = [
+  { href: "/museum/medals", title: "مدال‌ها", en: "Medals", count: "۱۲٬۴۰۰+", image: "https://images.unsplash.com/photo-1569025743873-ea3a9a6f8c6f?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/coins", title: "سکه و پول", en: "Coins", count: "۸٬۲۰۰+", image: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/banknotes", title: "اسکناس", en: "Banknotes", count: "۳٬۱۰۰+", image: "https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/antiques", title: "آنتیک", en: "Antiques", count: "۲٬۴۰۰+", image: "https://images.unsplash.com/photo-1577083552431-6e5fd82594ea?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/knives", title: "چاقو", en: "Knives", count: "۹۸۰+", image: "https://images.unsplash.com/photo-1595527893147-4e5e5c2c1a5e?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/rings", title: "انگشتر", en: "Rings", count: "۱٬۱۵۰+", image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/seals", title: "مهر", en: "Seals", count: "۷۲۰+", image: "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/stamps", title: "تمبر", en: "Stamps", count: "۴٬۶۰۰+", image: "https://images.unsplash.com/photo-1601925260368-ae2c6e9d6a26?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/tasbih", title: "تسبیح", en: "Tasbih", count: "۵۴۰+", image: "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=1200&q=80" },
+];
 
-const COUNTRIES = ["ایران", "فرانسه", "آلمان", "روسیه", "آمریکا", "بریتانیا"] as const;
+const FEATURED = [
+  { href: "/museum/medals?q=ایران", title: "مدال‌های ایران", subtitle: "از قاجار تا عصر معاصر", image: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=1600&q=80" },
+  { href: "/museum/medals?q=المپیک", title: "مدال‌های المپیک", subtitle: "افتخارات ورزشی جهان", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba6851?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/coins", title: "سکه‌های تاریخی", subtitle: "ضرب‌های کهن و یادبود", image: "https://images.unsplash.com/photo-1624365168968-f283d507b1d9?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/seals", title: "مهرهای سلطنتی", subtitle: "کتیبه، نقش و اعتبار", image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80" },
+  { href: "/museum/medals?q=نظامی", title: "مجموعه نظامی", subtitle: "نشان‌ها و افتخارات", image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80" },
+];
 
 const ERAS = [
-  { y: "1800", label: "آغاز قرن ۱۹" },
-  { y: "1850", label: "نیمهٔ قرن" },
-  { y: "1900", label: "آستانۀ قرن ۲۰" },
-  { y: "1950", label: "پس از جنگ" },
-  { y: "2000", label: "عصر معاصر" },
-] as const;
-
-const EXPLORE = [
-  {
-    href: "/museum/medals",
-    title: "مدال‌ها",
-    desc: "نشان‌های افتخار و یادبود",
-    Icon: IconMedal,
-    countKey: "medals" as const,
-  },
-  {
-    href: "/museum/coins",
-    title: "سکه‌ها",
-    desc: "سکه، اسکناس و فلزات",
-    Icon: IconCoin,
-    countKey: "coins" as const,
-  },
-  {
-    href: "/museum/medals",
-    title: "نشان‌ها",
-    desc: "emblem و نشان‌های رسمی",
-    Icon: IconEmblem,
-    countKey: "medals" as const,
-  },
-  {
-    href: "/museum/medals",
-    title: "ورزشی",
-    desc: "المپیک و قهرمانی",
-    Icon: IconLaurel,
-    countKey: "medals" as const,
-  },
-  {
-    href: "/museum/medals",
-    title: "نظامی",
-    desc: "افتخارات نظامی",
-    Icon: IconInsignia,
-    countKey: "medals" as const,
-  },
-  {
-    href: "/museum/coins",
-    title: "سکه‌های تاریخی",
-    desc: "ضرب‌های کهن و یادبود",
-    Icon: IconAncientCoin,
-    countKey: "coins" as const,
-  },
+  { period: "Qajar", title: "قاجار", years: "۱۷۸۹ — ۱۹۲۵", desc: "نشان‌های سلطنتی، مدال‌های دولتی و سکه‌های نقرهٔ عصر قاجار." },
+  { period: "Pahlavi", title: "پهلوی", years: "۱۹۲۵ — ۱۹۷۹", desc: "مدال‌های رسمی، نشان‌های نظامی و ضرب‌های یادبود دوره پهلوی." },
+  { period: "Modern", title: "ایران معاصر", years: "۱۹۷۹ — امروز", desc: "مجموعه‌های ورزشی، علمی و فرهنگی دوران معاصر." },
+  { period: "World Wars", title: "جنگ‌های جهانی", years: "۱۹۱۴ — ۱۹۴۵", desc: "نشان‌ها و مدال‌های مرتبط با جنگ جهانی اول و دوم." },
+  { period: "Ancient", title: "تمدن‌های کهن", years: "پیش از اسلام", desc: "سکه‌ها، مهرها و آثار بازمانده از تمدن‌های باستانی." },
 ];
+
+const STORY = [
+  { icon: Shield, title: "حفاظت", desc: "نگهداری دیجیتال و مستندسازی دقیق آثار برای نسل‌های آینده." },
+  { icon: BookOpen, title: "مستندسازی", desc: "ثبت مشخصات فنی، اصالت، سوابق خرید و ارزش‌گذاری هر قلم." },
+  { icon: Search, title: "پژوهش", desc: "امکان کاوش بر اساس کشور، دوره تاریخی، ماده و کاتالوگ." },
+  { icon: GraduationCap, title: "آموزش", desc: "روایت فرهنگی و تاریخی مجموعه‌ها برای مخاطب عمومی و متخصص." },
+];
+
+function imgOf(m: { primary_image?: string | null; primary_image_url?: string | null }) {
+  return resolveMediaUrl(m.primary_image_url || m.primary_image || null);
+}
 
 export default function MuseumHomePage() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
-  const [country, setCountry] = useState<string>(COUNTRIES[0]);
-  const [eraIdx, setEraIdx] = useState(2);
+  const [q, setQ] = useState("");
+  const [country, setCountry] = useState("");
+  const [year, setYear] = useState("");
+  const [category, setCategory] = useState("medals");
 
-  const {
-    data: medalsData,
-    isError: medalsError,
-    error: medalsErr,
-    refetch: refetchMedals,
-  } = useQuery({
-    queryKey: ["mu", "medals"],
+  const { data: medalsData } = useQuery({
+    queryKey: ["museum-home-medals"],
     enabled: isHydrated,
     queryFn: () => getMedals({ page: 1, ordering: "-created_at" }),
-    retry: 1,
   });
-  const { data: coinsData, isError: coinsError, refetch: refetchCoins } =
-    useQuery({
-      queryKey: ["mu", "coins"],
-      enabled: isHydrated,
-      queryFn: () =>
-        getCoins({ page: 1, is_active: true, ordering: "-created_at" }),
-      retry: 1,
-    });
-  const { data: categoriesData } = useQuery({
-    queryKey: ["mu", "cats"],
+
+  const { data: coinsData } = useQuery({
+    queryKey: ["museum-home-coins"],
     enabled: isHydrated,
-    queryFn: () => getCategories({ is_active: true, pageSize: 12 }),
+    queryFn: () => getCoins({ page: 1, is_active: true, ordering: "-created_at" }),
   });
 
-  const medals = (medalsData?.results ?? []) as MedalType[];
-  const coins = (coinsData?.results ?? []) as Coin[];
-  const categories = categoriesData?.results ?? [];
-  const medalCount = medalsData?.count ?? 0;
-  const coinCount = coinsData?.count ?? 0;
+  const latest = useMemo(() => {
+    const medals = (medalsData?.results ?? []).slice(0, 4).map((m) => ({
+      id: m.id,
+      name: m.name,
+      year: m.year,
+      country: m.country,
+      href: `/museum/medals/${m.id}`,
+      image: imgOf(m),
+      category: "مدال",
+    }));
+    const coins = (coinsData?.results ?? []).slice(0, 4).map((c) => ({
+      id: c.id,
+      name: c.name,
+      year: c.year,
+      country: c.country,
+      href: `/museum/coins/${c.id}`,
+      image: imgOf(c),
+      category: "سکه",
+    }));
+    return [...medals, ...coins].slice(0, 8);
+  }, [medalsData, coinsData]);
 
-  const hero = medals[0] ?? null;
-  const heroSrc = hero ? resolveMediaUrl(imgOf(hero)) : null;
-  const exhibition = medals[1] ?? medals[0] ?? null;
-  const exhibitionSrc = exhibition
-    ? resolveMediaUrl(imgOf(exhibition))
-    : null;
-  const wallItems = medals.slice(0, 6);
-  const rare = medals.slice(0, 3);
-
-  const countryStats = useMemo(() => {
-    const aliases: Record<string, string[]> = {
-      ایران: ["ایران", "iran", "persia"],
-      فرانسه: ["فرانسه", "france"],
-      آلمان: ["آلمان", "germany"],
-      روسیه: ["روسیه", "russia"],
-      آمریکا: ["آمریکا", "america", "usa", "united states"],
-      بریتانیا: ["بریتانیا", "britain", "uk", "england"],
-    };
-    const keys = aliases[country] ?? [country];
-    const from = medals.filter((m) => {
-      const c = (m.country || "").toLowerCase();
-      return keys.some((k) => c.includes(k.toLowerCase()));
-    });
-    const years = (from.length ? from : medals)
-      .map((m) => Number(m.year))
-      .filter((y) => !Number.isNaN(y) && y > 0);
-    return {
-      count: from.length,
-      oldest: years.length ? Math.min(...years) : "—",
-      newest: years.length ? Math.max(...years) : "—",
-    };
-  }, [medals, country]);
-
-  const eraYear = Number(ERAS[eraIdx].y);
-  const eraObjects = useMemo(() => {
-    return medals
-      .map((m) => ({ m, y: Number(m.year) || 0 }))
-      .filter((x) => x.y > 0)
-      .sort((a, b) => Math.abs(a.y - eraYear) - Math.abs(b.y - eraYear))
-      .slice(0, 4)
-      .map((x) => x.m);
-  }, [medals, eraYear]);
+  const goSearch = () => {
+    const parts = [q, country, year].map((x) => x.trim()).filter(Boolean);
+    const params = new URLSearchParams();
+    if (parts.length) params.set("q", parts.join(" "));
+    const base =
+      category === "coins"
+        ? "/museum/coins"
+        : category === "banknotes"
+          ? "/museum/banknotes"
+          : category === "seals"
+            ? "/museum/seals"
+            : "/museum/medals";
+    const qs = params.toString();
+    window.location.href = qs ? `${base}?${qs}` : base;
+  };
 
   return (
-    <div>
-      {(medalsError || coinsError) && (
-        <div className="border-b border-danger/20 bg-[#2a1216] px-5 py-3 text-center text-sm text-[#f0c8cc]">
-          {(medalsErr as Error)?.message || "اتصال برقرار نشد."}{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => {
-              void refetchMedals();
-              void refetchCoins();
-            }}
-          >
-            تلاش مجدد
-          </button>
-        </div>
-      )}
-
-      <section className="mu-stage relative min-h-[90vh] overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,#241618_0%,#0D0B0C_68%)]" />
-        <div className="mu-container relative flex min-h-[90vh] flex-col items-center justify-center pb-16 pt-24">
-          <p className="mu-label mu-fade text-[#c4a574]/85">THE ARCHIVE</p>
-          <div className="mu-hero-object relative z-10 mt-8 w-full max-w-md sm:max-w-lg">
-            <div className="mu-hero-glow" />
-            <div className="relative z-10 mx-auto aspect-square max-h-[52vh] w-full">
-              {heroSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={heroSrc}
-                  alt={hero?.name ?? ""}
-                  className="h-full w-full object-contain"
-                />
-              ) : (
-                <ItemPlaceholder kind="medal" className="h-full w-full" />
-              )}
-            </div>
-          </div>
-          <div className="mu-fade relative z-10 mt-10 max-w-xl text-center" style={{ animationDelay: "100ms" }}>
-            <p className="text-[0.7rem] tracking-[0.28em] text-white/35">
-              Objects that carry history
-            </p>
-            <h1 className="museum-serif mt-3 text-3xl font-semibold leading-[1.2] tracking-tight text-white sm:text-4xl lg:text-[2.65rem]">
-              آثاری که تاریخ را روایت می‌کنند
-            </h1>
-            <p className="mt-4 text-sm leading-7 text-white/50 sm:text-base">
-              کشف مجموعه‌ای از مدال‌ها، سکه‌ها و آثار تاریخی.
-            </p>
-            <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/museum/medals"
-                className="border border-white/25 bg-white/[0.03] px-8 py-3 text-sm tracking-wide text-white transition hover:border-[#c4a574] hover:text-[#c4a574]"
-              >
-                کاوش آرشیو
-              </Link>
-              <Link
-                href="#latest"
-                className="px-4 py-3 text-sm tracking-wide text-white/45 transition hover:text-white"
-              >
-                کشف مجموعه
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mu-ivory border-b border-border">
-        <div className="mx-auto grid max-w-6xl lg:grid-cols-12">
-          <div className="relative min-h-[20rem] lg:col-span-7 lg:min-h-[30rem]">
-            {exhibitionSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={exhibitionSrc}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-[#1a1614]">
-                <ItemPlaceholder kind="medal" className="h-full" />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col justify-center px-5 py-12 sm:px-10 lg:col-span-5 lg:py-16">
-            <p className="mu-label text-primary">EXHIBITION 01</p>
-            <h2 className="museum-serif mt-4 text-2xl font-semibold leading-snug text-primary-deep sm:text-3xl">
-              {exhibition?.category_detail?.name
-                ? `تالار ${exhibition.category_detail.name}`
-                : "مدال‌ها و نشان‌های منتخب"}
-            </h2>
-            <p className="mt-4 text-sm leading-8 text-text-muted">
-              {exhibition?.notes?.slice(0, 160) ||
-                "نمایشگاهی از آثار برجستهٔ آرشیو — جزئیات، اصالت و داستان هر اثر."}
-            </p>
-            <p className="mu-label mt-8 text-text-subtle">
-              {formatNumber(medalCount)} OBJECTS
-              {exhibition?.year ? `  ·  ${exhibition.year}` : ""}
-            </p>
-            <Link
-              href={
-                exhibition
-                  ? `/museum/medals/${exhibition.id}`
-                  : "/museum/medals"
-              }
-              className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-deep"
-            >
-              مشاهده نمایشگاه
+    <div className="mu-stage">
+      <section className="mu-hero" aria-label="Hero">
+        <div className="mu-hero-bg" style={{ backgroundImage: `url(${HERO_IMG})` }} aria-hidden />
+        <div className="mu-hero-overlay" aria-hidden />
+        <div className="mu-container relative z-10 pb-16 pt-32 sm:pb-20 sm:pt-40">
+          <p className="mu-label mu-reveal">Digital Museum · Est. Archive</p>
+          <h1 className="museum-serif mu-reveal mt-6 max-w-4xl text-5xl font-semibold text-[#F5F2EA] sm:text-6xl lg:text-7xl">
+            MEDAL ARCHIVE
+          </h1>
+          <p className="mu-reveal mt-4 max-w-2xl text-lg font-medium tracking-wide text-[#C8A75D] sm:text-xl">
+            A Digital Museum of Historical Collectibles
+          </p>
+          <p className="mu-reveal mt-5 max-w-xl text-base leading-8 text-[#A8A8A8] sm:text-lg">
+            آرشیو دیجیتال مجموعه‌های تاریخی، مدال‌ها، سکه‌ها و آثار ارزشمند
+          </p>
+          <div className="mu-reveal mt-10 flex flex-wrap items-center gap-3">
+            <Link href="/museum/medals" className="mu-btn mu-btn-gold">
+              کاوش مجموعه
               <ArrowLeft className="size-4" />
             </Link>
+            <a href="#categories" className="mu-btn mu-btn-ghost">مشاهده دسته‌ها</a>
+          </div>
+          <div className="mu-reveal mt-16 flex justify-center sm:mt-20">
+            <a href="#stats" className="mu-scroll-hint">پیمایش<span /></a>
           </div>
         </div>
       </section>
 
-      <section className="mu-ivory border-b border-border">
-        <div className="mu-container py-16 sm:py-24">
-          <p className="mu-label text-primary">Explore</p>
-          <h2 className="museum-serif mt-2 text-3xl font-semibold text-primary-deep sm:text-4xl">
-            کاوش مجموعه
-          </h2>
-          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {EXPLORE.map((item) => {
-              const count =
-                item.countKey === "medals" ? medalCount : coinCount;
-              return (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="mu-explore-tile group"
-                >
-                  <item.Icon className="mu-explore-icon" />
-                  <span className="mu-explore-line" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-text">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-xs leading-6 text-text-muted">
-                      {item.desc}
-                    </p>
-                  </div>
-                  <div className="mt-auto flex items-center justify-between pt-2">
-                    <span className="text-xs tabular-nums text-text-subtle">
-                      {formatNumber(count)} اثر
-                    </span>
-                    <span className="text-xs text-primary opacity-0 transition group-hover:opacity-100">
-                      مشاهده →
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="mu-stage border-b border-white/5 py-16 sm:py-24">
-        <div className="mu-container">
-          <p className="mu-label text-[#c4a574]">Curated</p>
-          <h2 className="museum-serif mt-2 text-3xl font-semibold text-white sm:text-4xl">
-            مجموعه‌های گزیده
-          </h2>
-          <div className="mt-12 grid gap-3 md:grid-cols-12">
-            {(categories.length
-              ? categories.slice(0, 5)
-              : [
-                  { id: 0, name: "Medals of Iran" },
-                  { id: -1, name: "Olympic Legends" },
-                  { id: -2, name: "Military Honors" },
-                  { id: -3, name: "Rare Coins" },
-                  { id: -4, name: "Historical" },
-                ]
-            ).map((c, i) => {
-              const cover =
-                i < medals.length
-                  ? resolveMediaUrl(imgOf(medals[i]!))
-                  : null;
-              const span =
-                i === 0
-                  ? "md:col-span-7 md:row-span-2 min-h-[22rem]"
-                  : i === 1
-                    ? "md:col-span-5 min-h-[14rem]"
-                    : "md:col-span-4 min-h-[12rem]";
-              return (
-                <Link
-                  key={c.id}
-                  href={
-                    c.id > 0
-                      ? `/museum/medals?category=${c.id}`
-                      : "/museum/medals"
-                  }
-                  className={cn(
-                    "group relative overflow-hidden bg-[#1a1614]",
-                    span
-                  )}
-                >
-                  {cover ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={cover}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover opacity-75 transition duration-700 group-hover:scale-105 group-hover:opacity-90"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                  <div className="relative flex h-full flex-col justify-end p-5 sm:p-6">
-                    <span className="mu-label text-white/35">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="mt-2 text-lg font-semibold text-white sm:text-xl">
-                      {c.name}
-                    </h3>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section id="latest" className="mu-ivory border-b border-border">
-        <div className="mu-container py-16 sm:py-24">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="mu-label text-primary">Latest Objects</p>
-              <h2 className="museum-serif mt-2 text-3xl font-semibold text-primary-deep sm:text-4xl">
-                آخرین آثار
-              </h2>
-            </div>
-            <Link
-              href="/museum/medals"
-              className="text-sm text-primary hover:text-primary-deep"
-            >
-              آرشیو کامل →
-            </Link>
-          </div>
-          <div className="mu-wall mt-12">
-            {wallItems.map((m, i) => {
-              const src = resolveMediaUrl(imgOf(m));
-              return (
-                <Link
-                  key={m.id}
-                  href={`/museum/medals/${m.id}`}
-                  className={WALL[i] ?? "mu-w4"}
-                >
-                  {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={m.name} />
-                  ) : (
-                    <ItemPlaceholder kind="medal" label={m.name.charAt(0)} />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                    {m.catalog_number ? (
-                      <p className="mu-label text-white/40">
-                        MA · {m.catalog_number}
-                      </p>
-                    ) : null}
-                    <p className="mt-1 font-semibold text-white">{m.name}</p>
-                    <p className="mt-1 text-xs text-white/55">
-                      {[m.country, m.year].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="mu-burgundy">
-        <div className="mu-container py-16 sm:py-24">
-          <p className="mu-label text-[#c4a574]">Timeline</p>
-          <h2 className="museum-serif mt-2 text-3xl font-semibold text-white sm:text-4xl">
-            سفر در زمان
-          </h2>
-          <div className="mt-8 flex flex-wrap gap-2">
-            {ERAS.map((e, i) => (
-              <button
-                key={e.y}
-                type="button"
-                onClick={() => setEraIdx(i)}
-                className={cn(
-                  "border px-4 py-2 text-sm tracking-wide transition",
-                  i === eraIdx
-                    ? "border-[#c4a574] text-[#c4a574]"
-                    : "border-white/15 text-white/45 hover:border-white/30 hover:text-white"
-                )}
-              >
-                {e.y}
-              </button>
-            ))}
-          </div>
-          <div className="mu-timeline-rail mt-10 text-white">
-            {ERAS.map((e, i) => (
-              <div key={e.y} className="mu-timeline-node">
-                <p className="museum-serif text-2xl font-semibold text-white/90">
-                  {e.y}
-                </p>
-                <p className="mt-1 text-xs text-white/40">{e.label}</p>
-                {i === eraIdx && eraObjects[0] ? (
-                  <p className="mt-4 text-sm text-[#c4a574]">
-                    {eraObjects[0].name}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-          {eraObjects.length > 0 ? (
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {eraObjects.map((m) => {
-                const src = resolveMediaUrl(imgOf(m));
-                return (
-                  <Link
-                    key={m.id}
-                    href={`/museum/medals/${m.id}`}
-                    className="group relative aspect-[3/4] overflow-hidden bg-black/25"
-                  >
-                    {src ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={src}
-                        alt={m.name}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <ItemPlaceholder kind="medal" />
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                      <p className="text-xs font-medium text-white">{m.name}</p>
-                      <p className="text-[0.65rem] text-white/50">{m.year}</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="mu-ivory border-b border-border">
-        <div className="mu-container py-16 sm:py-24">
-          <p className="mu-label text-primary">Explore by Country</p>
-          <h2 className="museum-serif mt-2 text-3xl font-semibold text-primary-deep sm:text-4xl">
-            کاوش بر اساس کشور
-          </h2>
-          <div className="mt-10 grid gap-8 lg:grid-cols-12">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:col-span-7">
-              {COUNTRIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  data-active={country === c}
-                  onClick={() => setCountry(c)}
-                  className="mu-country-btn"
-                >
-                  <span className="text-sm font-medium">{c}</span>
-                </button>
-              ))}
-            </div>
-            <div className="border border-border bg-white/40 px-6 py-8 lg:col-span-5">
-              <p className="mu-label text-text-subtle">{country}</p>
-              <p className="museum-serif mt-4 text-5xl font-semibold text-primary-deep">
-                {formatNumber(countryStats.count)}
-              </p>
-              <p className="mt-1 text-sm text-text-muted">اثر در آرشیو</p>
-              <dl className="mt-8 space-y-3 text-sm">
-                <div className="flex justify-between border-b border-border pb-3">
-                  <dt className="text-text-subtle">قدیمی‌ترین</dt>
-                  <dd className="font-medium">{countryStats.oldest}</dd>
-                </div>
-                <div className="flex justify-between border-b border-border pb-3">
-                  <dt className="text-text-subtle">جدیدترین</dt>
-                  <dd className="font-medium">{countryStats.newest}</dd>
-                </div>
-              </dl>
-              <Link
-                href={`/museum/medals?q=${encodeURIComponent(country)}`}
-                className="mt-8 inline-block text-sm font-medium text-primary"
-              >
-                مشاهده آثار {country} →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mu-vault border-b border-white/5">
-        <div className="mu-container py-16 sm:py-24">
-          <p className="mu-label text-[#c4a574]">Rare Objects</p>
-          <h2 className="museum-serif mt-2 text-3xl font-semibold text-white sm:text-4xl">
-            گنجینه‌های کمیاب
-          </h2>
-          <div className="mt-12 grid gap-3 sm:grid-cols-3">
-            {rare.map((m, i) => {
-              const src = resolveMediaUrl(imgOf(m));
-              return (
-                <Link
-                  key={m.id}
-                  href={`/museum/medals/${m.id}`}
-                  className={cn(
-                    "group relative overflow-hidden",
-                    i === 0
-                      ? "min-h-[20rem] sm:col-span-2 sm:row-span-2 sm:min-h-[28rem]"
-                      : "min-h-[12rem]"
-                  )}
-                >
-                  <div className="absolute inset-0 bg-[#120e0c]">
-                    {src ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={src}
-                        alt={m.name}
-                        className="h-full w-full object-cover opacity-85 transition duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <ItemPlaceholder kind="medal" />
-                    )}
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5">
-                    <p className="mu-label text-[#c4a574]/70">
-                      {m.catalog_number ? `MA · ${m.catalog_number}` : "RARE"}
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      {m.name}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {coins.length > 0 ? (
-        <section className="mu-stage border-b border-white/5 py-16">
-          <div className="mu-container">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="mu-label text-[#c4a574]">Coins</p>
-                <h2 className="museum-serif mt-2 text-2xl font-semibold text-white">
-                  سکه و پول
-                </h2>
-              </div>
-              <Link
-                href="/museum/coins"
-                className="text-sm text-[#c4a574] hover:text-white"
-              >
-                آرشیو →
-              </Link>
-            </div>
-            <div className="mt-10 grid grid-cols-2 gap-8 lg:grid-cols-4">
-              {coins.slice(0, 4).map((c) => {
-                const src = resolveMediaUrl(imgOf(c));
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/museum/coins/${c.id}`}
-                    className="group text-center"
-                  >
-                    <div className="museum-coin-ring relative mx-auto aspect-square max-w-[10rem] overflow-hidden bg-[#1a1612]">
-                      {src ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={src}
-                          alt={c.name}
-                          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                        />
-                      ) : (
-                        <ItemPlaceholder kind="coin" />
-                      )}
-                    </div>
-                    <p className="mt-4 text-sm font-medium text-white">{c.name}</p>
-                    <p className="mt-1 text-xs text-white/40">
-                      {[c.country, c.year].filter(Boolean).join(" · ")}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="mu-stage border-b border-white/5">
-        <div className="mu-container grid grid-cols-2 gap-10 py-16 sm:grid-cols-4 sm:py-20">
+      <section id="stats" className="border-y border-white/5 bg-[#171717]">
+        <div className="mu-container grid grid-cols-2 gap-2 py-14 sm:grid-cols-4 sm:py-16">
           {[
-            { n: formatNumber(medalCount + coinCount), l: "آثار" },
-            { n: formatNumber(medalCount), l: "مدال" },
-            { n: formatNumber(coinCount), l: "سکه" },
-            {
-              n: formatNumber(Math.max(categories.length, 1)),
-              l: "مجموعه",
-            },
+            { v: "۵۰٬۰۰۰+", l: "اثر" },
+            { v: "۱۲۰+", l: "کشور" },
+            { v: "۳۰۰+", l: "دسته" },
+            { v: "۱۰۰+", l: "سال تاریخ" },
           ].map((s) => (
-            <div key={s.l}>
-              <p className="museum-serif text-4xl font-semibold tabular-nums text-white sm:text-5xl">
-                {s.n}
-                <span className="text-[#c4a574]">+</span>
-              </p>
-              <p className="mu-label mt-3 text-white/35">{s.l}</p>
+            <div key={s.l} className="mu-stat">
+              <p className="mu-stat-value">{s.v}</p>
+              <p className="mu-stat-label">{s.l}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="mu-ivory">
-        <div className="mu-container py-20 text-center sm:py-28">
-          <p className="mu-label text-primary">Begin</p>
-          <p className="mt-2 text-xs tracking-[0.2em] text-text-subtle">
-            There is always another story to discover
-          </p>
-          <h2 className="museum-serif mt-4 text-3xl font-semibold text-primary-deep sm:text-4xl">
-            تاریخ را از نزدیک ببینید.
-          </h2>
-          <Link
-            href="/museum/medals"
-            className="mt-10 inline-block bg-primary px-10 py-3.5 text-sm font-medium tracking-wide text-white transition hover:bg-primary-deep"
-          >
-            ورود به آرشیو
+      <section id="categories" className="py-20 sm:py-28">
+        <div className="mu-container">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mu-label">Collections</p>
+              <h2 className="museum-serif mt-3 text-3xl font-semibold text-[#F5F2EA] sm:text-4xl">دسته‌بندی مجموعه‌ها</h2>
+              <p className="mt-3 max-w-lg text-sm leading-7 text-[#A8A8A8]">از مدال و سکه تا مهر و تمبر — هر مجموعه روایتی مستقل از تاریخ مادی است.</p>
+            </div>
+            <Link href="/museum/medals" className="text-sm text-[#C8A75D] transition hover:text-[#F5F2EA]">مشاهده همه ←</Link>
+          </div>
+          <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+            {CATEGORIES.map((c) => (
+              <Link key={c.href} href={c.href} className="mu-cat-card group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.image} alt="" />
+                <div className="mu-cat-overlay">
+                  <p className="text-[0.65rem] tracking-[0.2em] text-[#C8A75D]">{c.en}</p>
+                  <h3 className="museum-serif mt-1 text-xl font-semibold text-[#F5F2EA]">{c.title}</h3>
+                  <p className="mt-1 text-xs text-[#A8A8A8]">{c.count} اثر</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-white/5 bg-[#0a0a0a] py-20 sm:py-28">
+        <div className="mu-container">
+          <p className="mu-label">Curated</p>
+          <h2 className="museum-serif mt-3 text-3xl font-semibold sm:text-4xl">مجموعه‌های منتخب</h2>
+          <p className="mt-3 max-w-lg text-sm leading-7 text-[#A8A8A8]">گلچین‌هایی سردبیری‌شده برای کشف عمیق‌تر تاریخ و فرهنگ.</p>
+          <div className="mu-featured mt-12">
+            {FEATURED.slice(0, 3).map((f, i) => (
+              <Link key={f.href + i} href={f.href} className="mu-featured-card group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={f.image} alt="" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <p className="mu-label text-[#C8A75D]">Featured</p>
+                  <h3 className="museum-serif mt-2 text-2xl font-semibold text-white">{f.title}</h3>
+                  <p className="mt-1 text-sm text-white/60">{f.subtitle}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {FEATURED.slice(3).map((f) => (
+              <Link key={f.href} href={f.href} className="mu-featured-card min-h-[14rem]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={f.image} alt="" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <h3 className="museum-serif text-xl font-semibold text-white">{f.title}</h3>
+                  <p className="mt-1 text-sm text-white/60">{f.subtitle}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="mu-container">
+          <p className="mu-label">Timeline</p>
+          <h2 className="museum-serif mt-3 text-3xl font-semibold sm:text-4xl">گاه‌شمار تاریخی</h2>
+          <p className="mt-3 max-w-lg text-sm leading-7 text-[#A8A8A8]">سفر در دوره‌ها — از تمدن‌های کهن تا عصر معاصر.</p>
+          <div className="mu-timeline mt-10">
+            {ERAS.map((e) => (
+              <article key={e.period} className="mu-era">
+                <p className="mu-label">{e.period}</p>
+                <h3 className="museum-serif mt-4 text-2xl font-semibold text-[#F5F2EA]">{e.title}</h3>
+                <p className="mt-2 text-sm text-[#C8A75D]">{e.years}</p>
+                <p className="mt-4 text-sm leading-7 text-[#A8A8A8]">{e.desc}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-white/5 bg-[#171717] py-20 sm:py-28">
+        <div className="mu-container">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mu-label">Recent Acquisitions</p>
+              <h2 className="museum-serif mt-3 text-3xl font-semibold sm:text-4xl">تازه‌ترین آثار</h2>
+            </div>
+            <Link href="/museum/medals" className="text-sm text-[#C8A75D] hover:text-[#F5F2EA]">آرشیو کامل ←</Link>
+          </div>
+          <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+            {latest.length === 0
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="museum-shimmer aspect-square rounded-sm bg-[#0d0d0d]" />
+                ))
+              : latest.map((item) => (
+                  <Link key={`${item.href}-${item.id}`} href={item.href} className="mu-item-card">
+                    <div className="bg-[#0d0d0d]">
+                      {item.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.image} alt={item.name} />
+                      ) : (
+                        <div className="flex aspect-square items-center justify-center">
+                          <ItemPlaceholder kind="medal" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1 p-4">
+                      <p className="text-[0.65rem] tracking-[0.16em] text-[#C8A75D]">{item.category}</p>
+                      <h3 className="line-clamp-2 text-sm font-medium text-[#F5F2EA]">{item.name}</h3>
+                      <p className="text-xs text-[#A8A8A8]">{[item.year, item.country].filter(Boolean).join(" · ") || "—"}</p>
+                    </div>
+                  </Link>
+                ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="mu-container">
+          <p className="mu-label">Experience</p>
+          <h2 className="museum-serif mt-3 max-w-2xl text-3xl font-semibold sm:text-4xl">تجربهٔ موزه دیجیتال</h2>
+          <p className="mt-4 max-w-2xl text-sm leading-8 text-[#A8A8A8]">Medal Archive فقط یک فهرست نیست — فضایی برای روایت، پژوهش و حفظ میراث مجموعه‌های تاریخی است.</p>
+          <div className="mt-12 grid gap-4 md:grid-cols-2">
+            <div className="mu-story-panel min-h-[20rem] md:min-h-[28rem]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://images.unsplash.com/photo-1566058539055-5361ffc80d22?auto=format&fit=crop&w=1600&q=80" alt="" />
+              <div className="relative z-10 p-8">
+                <h3 className="museum-serif text-2xl font-semibold text-white">هر اثر، یک روایت</h3>
+                <p className="mt-3 max-w-md text-sm leading-7 text-white/65">از تصویر و مشخصات فنی تا سوابق اصالت و ارزش‌گذاری — هر قلم در بافت تاریخی خود نمایش داده می‌شود.</p>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {STORY.map((s) => (
+                <div key={s.title} className="border border-white/8 bg-[#171717] p-6 transition hover:border-[#C8A75D]/40">
+                  <s.icon className="size-5 text-[#C8A75D]" />
+                  <h3 className="museum-serif mt-4 text-xl font-semibold">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-[#A8A8A8]">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-white/5 bg-[#0a0a0a] py-20 sm:py-24">
+        <div className="mu-container">
+          <div className="mu-search">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="mu-label">Search the Archive</p>
+                <h2 className="museum-serif mt-3 text-2xl font-semibold sm:text-3xl">جستجو در آرشیو</h2>
+              </div>
+              <Landmark className="hidden size-8 text-[#C8A75D]/50 sm:block" />
+            </div>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="block space-y-2">
+                <span className="text-xs text-[#A8A8A8]">نام اثر</span>
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="مثلاً مدال المپیک…" />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-xs text-[#A8A8A8]">کشور</span>
+                <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="ایران، فرانسه…" />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-xs text-[#A8A8A8]">سال</span>
+                <input value={year} onChange={(e) => setYear(e.target.value)} placeholder="۱۹۷۶" />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-xs text-[#A8A8A8]">دسته</span>
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="medals">مدال</option>
+                  <option value="coins">سکه</option>
+                  <option value="banknotes">اسکناس</option>
+                  <option value="seals">مهر</option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-8">
+              <button type="button" onClick={goSearch} className="mu-btn mu-btn-gold">
+                <Search className="size-4" />
+                جستجو در آرشیو
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="mu-container mu-about-grid">
+          <div>
+            <p className="mu-label">Institution</p>
+            <h2 className="museum-serif mt-3 text-3xl font-semibold sm:text-4xl">دربارهٔ آرشیو</h2>
+            <p className="mt-6 text-sm leading-8 text-[#A8A8A8] sm:text-base">
+              Medal Archive یک نهاد دیجیتال برای نگهداری، مستندسازی و نمایش مجموعه‌های تاریخی است. مأموریت ما پیوند دادن مخاطب با میراث مادی — از مدال و سکه تا مهر و آنتیک — در قالبی موزه‌ای، دقیق و قابل اعتماد است.
+            </p>
+            <div className="mu-gold-line my-8" />
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <h3 className="text-sm font-semibold text-[#C8A75D]">ماموریت</h3>
+                <p className="mt-2 text-sm leading-7 text-[#A8A8A8]">حفظ و دسترس‌پذیر کردن دانش مجموعه‌ها برای پژوهشگران و عموم.</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#C8A75D]">چشم‌انداز</h3>
+                <p className="mt-2 text-sm leading-7 text-[#A8A8A8]">تبدیل شدن به مرجع دیجیتال مجموعه‌های تاریخی منطقه.</p>
+              </div>
+            </div>
+          </div>
+          <div className="relative min-h-[20rem] overflow-hidden bg-[#171717]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://images.unsplash.com/photo-1554907984-15263bfd63bd?auto=format&fit=crop&w=1400&q=80" alt="" className="h-full w-full object-cover opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-transparent to-transparent" />
+            <div className="absolute bottom-0 p-6">
+              <p className="museum-serif text-2xl text-white">تاریخ را لمس کنید</p>
+              <p className="mt-2 text-sm text-white/60">هر مجموعه، دریچه‌ای به گذشته</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-white/5 bg-[#171717]">
+        <div className="mu-container flex flex-col items-start justify-between gap-6 py-16 sm:flex-row sm:items-center">
+          <div>
+            <p className="mu-label">Begin</p>
+            <h2 className="museum-serif mt-2 text-2xl font-semibold sm:text-3xl">وارد آرشیو شوید</h2>
+          </div>
+          <Link href="/museum/medals" className="mu-btn mu-btn-gold">
+            شروع کاوش
+            <ArrowUpLeft className="size-4" />
           </Link>
         </div>
       </section>
