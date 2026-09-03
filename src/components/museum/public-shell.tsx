@@ -137,73 +137,10 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
 
       <main className="pt-0">{children}</main>
 
-      <footer className="mt-0 border-t border-white/5 bg-[#0a0a0a] text-[#F5F2EA]">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:grid-cols-2 sm:px-8 lg:grid-cols-4 lg:px-10">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-full bg-[#C8A75D] text-[#0D0D0D]">
-                <Landmark className="size-4" />
-              </span>
-              <span className="text-sm font-semibold tracking-wide">
-                Medal Archive
-              </span>
-            </div>
-            <p className="mt-4 max-w-md text-sm leading-7 text-[#A8A8A8]">
-              موزه دیجیتال مجموعه‌های تاریخی — فضایی برای کشف، مطالعه و حفظ
-              میراث مادی مدال، سکه و آثار ارزشمند.
-            </p>
-          </div>
-          <div>
-            <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-[#C8A75D] uppercase">
-              مجموعه‌ها
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-[#A8A8A8]">
-              {[
-                ["/museum/medals", "مدال"],
-                ["/museum/coins", "سکه و پول"],
-                ["/museum/banknotes", "اسکناس"],
-                ["/museum/antiques", "آنتیک"],
-                ["/museum/seals", "مهر"],
-                ["/museum/stamps", "تمبر"],
-              ].map(([href, label]) => (
-                <li key={href}>
-                  <Link href={href} className="hover:text-[#F5F2EA]">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-[#C8A75D] uppercase">
-              سامانه
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-[#A8A8A8]">
-              <li>
-                <Link href="/museum" className="hover:text-[#F5F2EA]">
-                  نمای عمومی
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-[#F5F2EA]">
-                  ورود مدیران
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/dashboard" className="hover:text-[#F5F2EA]">
-                  پنل مدیریت
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/5">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-5 text-center text-xs text-[#A8A8A8] sm:flex-row sm:px-8 sm:text-right lg:px-10">
-            <p>© {new Date().getFullYear()} Medal Archive Pro</p>
-            <p className="tracking-[0.2em] uppercase text-[#C8A75D]/70">
-              Digital Museum
-            </p>
-          </div>
+      <footer className="border-t border-white/5 bg-[#0a0a0a]">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-1 px-5 py-8 text-center text-xs text-[#A8A8A8] sm:px-8 lg:px-10">
+          <p>© {new Date().getFullYear()} Medal Archive Pro — همه حقوق محفوظ است.</p>
+          <p className="tracking-[0.2em] uppercase text-[#C8A75D]/60">Digital Museum</p>
         </div>
       </footer>
 
