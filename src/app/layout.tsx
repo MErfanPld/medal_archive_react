@@ -1,15 +1,6 @@
 import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
-
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  variable: "--font-vazirmatn",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-  preload: true,
-});
 
 export const metadata: Metadata = {
   title: {
@@ -41,7 +32,7 @@ export default function RootLayout({
     <html
       lang="fa"
       dir="rtl"
-      className={`${vazirmatn.variable} h-full`}
+      className="h-full"
       suppressHydrationWarning
     >
       <body
