@@ -15,9 +15,15 @@ import { resolveMediaUrl } from "@/lib/utils";
 export type DetailImage = {
   id: string | number;
   url: string | null;
+  caption?: string;
 };
 
 export type DetailMeta = { label: string; value: string };
+
+export type DetailSection = {
+  title: string;
+  items: DetailMeta[];
+};
 
 export type RelatedItem = {
   id: number;
@@ -26,6 +32,10 @@ export type RelatedItem = {
   image?: string | null;
   subtitle?: string;
 };
+
+function sectionHasItems(s: DetailSection) {
+  return s.items.some((i) => i.value && String(i.value).trim() !== "");
+}
 
 export function MuseumDetailLayout({
   breadcrumb,
@@ -39,6 +49,7 @@ export function MuseumDetailLayout({
   setZoom,
   museumMode,
   setMuseumMode,
+  sections,
   meta,
   story,
   related,
@@ -56,7 +67,8 @@ export function MuseumDetailLayout({
   setZoom: (fn: (z: number) => number) => void;
   museumMode: boolean;
   setMuseumMode: (v: boolean) => void;
-  meta: DetailMeta[];
+  sections?: DetailSection[];
+  meta?: DetailMeta[];
   story?: string;
   related: RelatedItem[];
   relatedLabel?: string;
@@ -69,6 +81,13 @@ export function MuseumDetailLayout({
     0,
     images.findIndex((i) => i.id === (activeId ?? current?.id))
   );
+
+  const resolvedSections: DetailSection[] =
+    sections && sections.length
+      ? sections.filter(sectionHasItems)
+      : meta && meta.length
+        ? [{ title: "مشخصات", items: meta.filter((m) => m.value) }]
+        : [];
 
   const goPrev = () => {
     if (!images.length) return;
@@ -83,7 +102,7 @@ export function MuseumDetailLayout({
 
   return (
     <article className="mu-stage min-h-screen">
-      <section className="relative h-[min(78vh,42rem)] w-full overflow-hidden bg-[#0a0a0a]">
+      <section className="relative h-[min(72vh,40rem)] w-full overflow-hidden bg-[#0a0a0a]">
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -98,22 +117,34 @@ export function MuseumDetailLayout({
             <span className="text-sm tracking-[0.2em]">بدون تصویر</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/40 to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/45 to-black/25" />
         <div className="absolute inset-x-0 bottom-0">
           <div className="mu-container pb-10 pt-20">
             <nav className="text-[0.7rem] text-white/50">
               {breadcrumb.map((b, i) => (
                 <span key={b.href + b.label}>
-                  {i > 0 ? <span className="mx-1.5 text-white/25">/</span> : null}
-                  <Link href={b.href} className="transition hover:text-white">{b.label}</Link>
+                  {i > 0 ? (
+                    <span className="mx-1.5 text-white/25">/</span>
+                  ) : null}
+                  <Link href={b.href} className="transition hover:text-white">
+                    {b.label}
+                  </Link>
                 </span>
               ))}
             </nav>
             {kicker ? (
-              <p className="mt-5 text-[0.7rem] font-semibold tracking-[0.22em] text-[#C8A75D]">{kicker}</p>
+              <p className="mt-5 text-[0.7rem] font-semibold tracking-[0.22em] text-[#C8A75D]">
+                {kicker}
+              </p>
             ) : null}
-            <h1 className="museum-serif mt-3 max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-5xl">{title}</h1>
-            {subtitle ? <p className="mt-3 max-w-xl text-sm leading-7 text-white/55">{subtitle}</p> : null}
+            <h1 className="museum-serif mt-3 max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-5xl">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="mt-3 max-w-xl text-sm leading-7 text-white/55">
+                {subtitle}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -130,14 +161,14 @@ export function MuseumDetailLayout({
           ) : null}
         </div>
         <div className="absolute bottom-6 left-5 flex gap-2 sm:left-auto sm:right-8">
-          <button type="button" onClick={() => setZoom((z) => Math.min(2.2, z + 0.2))} className="rounded-full border border-white/15 bg-black/40 p-2 text-white backdrop-blur transition hover:border-[#C8A75D]/50" aria-label="بزرگنمایی">
+          <button type="button" onClick={() => setZoom((z) => Math.min(2.2, z + 0.2))} className="rounded-full border border-white/15 bg-black/40 p-2 text-white backdrop-blur" aria-label="بزرگنمایی">
             <ZoomIn className="size-4" />
           </button>
-          <button type="button" onClick={() => setZoom((z) => Math.max(1, z - 0.2))} className="rounded-full border border-white/15 bg-black/40 p-2 text-white backdrop-blur transition hover:border-[#C8A75D]/50" aria-label="کوچک‌نمایی">
+          <button type="button" onClick={() => setZoom((z) => Math.max(1, z - 0.2))} className="rounded-full border border-white/15 bg-black/40 p-2 text-white backdrop-blur" aria-label="کوچک‌نمایی">
             <ZoomOut className="size-4" />
           </button>
           {src ? (
-            <button type="button" onClick={() => setMuseumMode(true)} className="rounded-full border border-white/15 bg-black/40 p-2 text-white backdrop-blur transition hover:border-[#C8A75D]/50" aria-label="تمام‌صفحه">
+            <button type="button" onClick={() => setMuseumMode(true)} className="rounded-full border border-white/15 bg-black/40 p-2 text-white backdrop-blur" aria-label="تمام‌صفحه">
               <Maximize2 className="size-4" />
             </button>
           ) : null}
@@ -154,14 +185,19 @@ export function MuseumDetailLayout({
                 <button
                   key={img.id}
                   type="button"
-                  onClick={() => { onSelectImage(img.id); setZoom(() => 1); }}
-                  className={`relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden border transition ${
-                    active ? "border-[#C8A75D] opacity-100" : "border-white/10 opacity-55 hover:opacity-100"
+                  onClick={() => {
+                    onSelectImage(img.id);
+                    setZoom(() => 1);
+                  }}
+                  className={`relative h-[4.75rem] w-[4.75rem] shrink-0 overflow-hidden border transition ${
+                    active
+                      ? "border-[#C8A75D] opacity-100"
+                      : "border-white/10 opacity-55 hover:opacity-100"
                   }`}
                 >
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={thumb} alt="" className="h-full w-full object-cover" />
+                    <img src={thumb} alt={img.caption || ""} className="h-full w-full object-cover" />
                   ) : (
                     <span className="flex h-full items-center justify-center text-[0.65rem] text-white/40">{i + 1}</span>
                   )}
@@ -172,41 +208,49 @@ export function MuseumDetailLayout({
         </div>
       ) : null}
 
-      <section className="mu-container py-14 sm:py-20">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-5">
-            <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">مشخصات</p>
-            <h2 className="museum-serif mt-2 text-2xl font-semibold text-white">جزئیات اثر</h2>
-            <div className="mt-8 space-y-0">
-              {meta.map((m) => (
-                <div key={m.label} className="flex items-baseline justify-between gap-4 border-b border-white/[0.06] py-3.5">
-                  <span className="text-[0.7rem] tracking-[0.12em] text-[#C8A75D]/90">{m.label}</span>
-                  <span className="text-left text-sm font-medium text-[#F5F2EA]">{m.value}</span>
+      <section className="mu-container py-14 sm:py-16">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
+          <div className="space-y-12 lg:col-span-7">
+            {resolvedSections.map((sec) => (
+              <div key={sec.title}>
+                <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">
+                  {sec.title}
+                </p>
+                <div className="mt-5 grid gap-0 sm:grid-cols-2">
+                  {sec.items
+                    .filter((m) => m.value && String(m.value).trim() !== "")
+                    .map((m) => (
+                      <div
+                        key={sec.title + m.label}
+                        className="flex items-baseline justify-between gap-3 border-b border-white/[0.06] py-3.5 sm:px-1"
+                      >
+                        <span className="shrink-0 text-[0.7rem] tracking-[0.1em] text-[#C8A75D]/90">
+                          {m.label}
+                        </span>
+                        <span className="text-left text-sm font-medium text-[#F5F2EA]">
+                          {m.value}
+                        </span>
+                      </div>
+                    ))}
                 </div>
-              ))}
-            </div>
-            <Link href={archiveHref} className="mt-10 inline-flex items-center gap-2 border border-white/15 px-5 py-2.5 text-sm text-white/75 transition hover:border-[#C8A75D] hover:text-[#C8A75D]">
+              </div>
+            ))}
+          </div>
+
+          <div className="lg:col-span-5">
+            <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">روایت</p>
+            <h2 className="museum-serif mt-2 text-2xl font-semibold text-white">درباره این اثر</h2>
+            <p className="mt-6 text-base leading-9 text-white/60">
+              {story?.trim() ||
+                "این اثر در مجموعه آثار ناصر صلب ثبت و نگهداری شده است. تصاویر و مشخصات برای پژوهش و مستندسازی ارائه می‌شود."}
+            </p>
+            <Link
+              href={archiveHref}
+              className="mt-10 inline-flex items-center gap-2 border border-white/15 px-5 py-2.5 text-sm text-white/75 transition hover:border-[#C8A75D] hover:text-[#C8A75D]"
+            >
               <ChevronLeft className="size-4" />
               بازگشت به آرشیو
             </Link>
-          </div>
-
-          <div className="lg:col-span-7">
-            {story ? (
-              <>
-                <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">روایت</p>
-                <h2 className="museum-serif mt-2 text-2xl font-semibold text-white">درباره این اثر</h2>
-                <p className="mt-6 text-base leading-9 text-white/60">{story}</p>
-              </>
-            ) : (
-              <>
-                <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">آرشیو</p>
-                <h2 className="museum-serif mt-2 text-2xl font-semibold text-white">مستندسازی دیجیتال</h2>
-                <p className="mt-6 text-base leading-9 text-white/60">
-                  این اثر در آرشیو دیجیتال ناصر صلب ثبت و نگهداری شده است. تصاویر و مشخصات برای پژوهش، مستندسازی و معرفی مجموعه‌های تاریخی ارائه می‌شود.
-                </p>
-              </>
-            )}
           </div>
         </div>
       </section>
@@ -214,8 +258,10 @@ export function MuseumDetailLayout({
       {related.length > 0 ? (
         <section className="border-t border-white/5 bg-[#0a0a0a] py-16 sm:py-20">
           <div className="mu-container">
-            <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">پیشنهاد آرشیو</p>
-            <h2 className="museum-serif mt-2 text-2xl font-semibold text-white sm:text-3xl">{relatedLabel}</h2>
+            <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-[#C8A75D]">پیشنهاد مجموعه</p>
+            <h2 className="museum-serif mt-2 text-2xl font-semibold text-white sm:text-3xl">
+              {relatedLabel}
+            </h2>
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-5">
               {related.slice(0, 4).map((m) => {
                 const rsrc = resolveMediaUrl(m.image || null);
