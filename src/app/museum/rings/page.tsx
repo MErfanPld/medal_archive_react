@@ -1,106 +1,90 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { ImageOff, Search } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { getRings } from "@/lib/data/rings";
 import { getCategories } from "@/lib/data/categories";
-import { ItemPlaceholder } from "@/components/museum/item-placeholder";
 import { Pagination } from "@/components/ui/pagination";
 import { formatNumber, resolveMediaUrl } from "@/lib/utils";
 
-function imgOf(c: { primary_image?: string | null; primary_image_url?: string | null }) {
-  return c.primary_image_url || c.primary_image || null;
+function imgOf(m: { primary_image?: string | null; primary_image_url?: string | null }) {
+  return resolveMediaUrl(m.primary_image_url || m.primary_image || null);
 }
 
-export default function MuseumRingArchivePage() {
+function MuseumRingArchivePage() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const initialCat = searchParams.get("category");
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [category, setCategory] = useState<number | undefined>();
+  const [search, setSearch] = useState(initialQ);
+  const [searchInput, setSearchInput] = useState(initialQ);
+  const [category, setCategory] = useState<number | undefined>(initialCat ? Number(initialCat) : undefined);
   const [ordering, setOrdering] = useState("-created_at");
 
   const { data: categoriesData } = useQuery({
-    queryKey: ["museum-cats"],
-    enabled: isHydrated,
+    queryKey: ["museum-cats"], enabled: isHydrated,
     queryFn: () => getCategories({ is_active: true, pageSize: 50 }),
   });
-
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["museum-rings", page, search, category, ordering],
-    enabled: isHydrated,
-    queryFn: () => getRings({ page, search: search || undefined, category, is_active: true, ordering }),
-    retry: 1,
+    queryKey: ["museum-rings", page, search, category, ordering], enabled: isHydrated,
+    queryFn: () => getRings({ page, search: search || undefined, category, ordering }), retry: 1,
   });
 
   const items = data?.results ?? [];
   const total = data?.count ?? 0;
+  const meta = useMemo(() => `${formatNumber(total)} اثر`, [total]);
 
   return (
-    <div>
-      <header className="dm-vault">
-        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 lg:px-10">
-          <nav className="text-[0.65rem] tracking-[0.2em] text-white/35">
-            <Link href="/museum" className="hover:text-white">خانه</Link>
-            <span className="mx-2">/</span>
-            <span>RING ARCHIVE</span>
+    <div className="mu-stage min-h-screen">
+      <header className="mu-archive-hero">
+        <div className="mu-container">
+          <nav className="mu-anim-rise text-[0.65rem] tracking-[0.2em] text-white/35">
+            <Link href="/museum" className="hover:text-white">خانه</Link><span className="mx-2">/</span>
+            <span className="text-[#C8A75D]">RING ARCHIVE</span>
           </nav>
-          <h1 className="museum-serif mt-8 text-5xl font-semibold text-white sm:text-6xl lg:text-7xl">Ring<br />Archive</h1>
-          <p className="mt-6 max-w-md text-sm leading-7 text-white/55">تالار انگشترها — نگین، فلز و سبک.</p>
-          <p className="dm-label mt-8 text-[#c4a574]">{formatNumber(total)} قلم</p>
+          <h1 className="museum-serif mu-anim-rise mt-8 text-5xl font-semibold text-white sm:text-6xl lg:text-7xl">Ring<br />Archive</h1>
+          <p className="mu-anim-rise mt-6 max-w-md text-sm leading-7 text-white/55">تالار انگشترها — نگین، فلز و سبک.</p>
+          <p className="mu-label mu-anim-rise mt-8 text-[#c8a75d]">{meta}</p>
         </div>
       </header>
-      <div className="dm-stage border-b border-white/10">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-6 sm:flex-row sm:items-center sm:px-8 lg:px-10">
+      <div className="mu-container">
+        <div className="mu-filter-bar mu-anim-rise">
           <form className="flex min-w-0 flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }}>
-            <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="جستجو…" className="h-11 w-full border-0 border-b border-white/15 bg-transparent text-sm text-white outline-none placeholder:text-white/30 focus:border-[#c4a574]" />
-            <button type="submit" className="h-11 text-sm text-[#c4a574]">جستجو</button>
+            <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="جستجو در آرشیو…" className="min-w-0 flex-1" />
+            <button type="submit" className="inline-flex h-11 items-center gap-2 text-sm text-[#C8A75D]"><Search className="size-4" />جستجو</button>
           </form>
-          <select className="h-11 border-0 border-b border-white/15 bg-transparent text-sm text-white" value={category ?? ""} onChange={(e) => { setCategory(e.target.value ? Number(e.target.value) : undefined); setPage(1); }}>
+          <select value={category ?? ""} onChange={(e) => { setCategory(e.target.value ? Number(e.target.value) : undefined); setPage(1); }}>
             <option value="">دسته</option>
-            {categoriesData?.results?.map((c) => (<option key={c.id} value={c.id} className="text-text">{c.name}</option>))}
+            {categoriesData?.results?.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
-          <select className="h-11 border-0 border-b border-white/15 bg-transparent text-sm text-white" value={ordering} onChange={(e) => { setOrdering(e.target.value); setPage(1); }}>
-            <option value="-created_at" className="text-text">جدیدترین</option>
-            <option value="created_at" className="text-text">قدیمی‌ترین</option>
-            <option value="-year" className="text-text">سال</option>
-            <option value="name" className="text-text">الفبا</option>
+          <select value={ordering} onChange={(e) => { setOrdering(e.target.value); setPage(1); }}>
+            <option value="-created_at">جدیدترین</option><option value="created_at">قدیمی‌ترین</option>
+            <option value="-year">سال ↓</option><option value="year">سال ↑</option><option value="name">الفبا</option>
           </select>
         </div>
-      </div>
-      <div className="dm-vault">
-        <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 lg:px-10">
-          {isError ? (
-            <div className="py-20 text-center text-white/70"><p>{(error as Error)?.message}</p><button type="button" onClick={() => refetch()} className="mt-4 text-[#c4a574]">تلاش مجدد</button></div>
-          ) : isLoading ? (
-            <div className="grid grid-cols-2 gap-8 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="museum-shimmer mx-auto aspect-square max-w-[14rem] rounded-full" />))}</div>
-          ) : items.length === 0 ? (
-            <p className="py-24 text-center text-sm text-white/50">نتیجه‌ای یافت نشد.</p>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:gap-x-10 lg:grid-cols-3">
-                {items.map((c) => {
-                  const src = resolveMediaUrl(imgOf(c));
-                  return (
-                    <Link key={c.id} href={`/museum/rings/${c.id}`} className="group text-center">
-                      <div className="museum-object-frame rounded-sm relative mx-auto aspect-square max-w-[13rem] overflow-hidden bg-[#1a1612] lg:max-w-[15rem]">
-                        {src ? (// eslint-disable-next-line @next/next/no-img-element
-                        <img src={src} alt={c.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />) : (<ItemPlaceholder kind="medal" />)}
-                      </div>
-                      <p className="dm-label mt-5 text-white/30">{c.catalog_number ? `RG / ${c.catalog_number}` : (c.material || c.country || "—")}</p>
-                      <p className="mt-2 text-sm font-medium text-white">{c.name}</p>
-                      <p className="mt-1 text-xs text-white/45">{[c.country, c.year, c.material].filter(Boolean).join(" · ")}</p>
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="mt-14"><Pagination page={page} pageSize={20} total={total} onPageChange={setPage} /></div>
-            </>
-          )}
+        <div className="py-12 sm:py-16">
+          {isError ? (<div className="py-20 text-center text-white/70"><p>{(error as Error)?.message}</p><button type="button" onClick={() => refetch()} className="mt-4 text-[#C8A75D]">تلاش مجدد</button></div>)
+          : isLoading ? (<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => (<div key={i} className="museum-shimmer aspect-square rounded-sm" />))}</div>)
+          : items.length === 0 ? (<p className="py-24 text-center text-sm text-white/50">نتیجه‌ای یافت نشد.</p>)
+          : (<><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+              {items.map((m) => { const src = imgOf(m); return (
+                <Link key={m.id} href={`/museum/rings/${m.id}`} className="mu-item-card">
+                  <div className="relative aspect-square overflow-hidden bg-[#0d0d0d]">{src ? (/* eslint-disable-next-line @next/next/no-img-element */<img src={src} alt={m.name} className="h-full w-full object-cover" />) : (<div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[#C8A75D]/50"><ImageOff className="size-8" strokeWidth={1.25} /><span className="text-[0.65rem] tracking-[0.16em] uppercase">بدون تصویر</span></div>)}</div>
+                  <div className="space-y-1 p-4"><p className="text-[0.65rem] tracking-[0.16em] text-[#C8A75D]">{(m as { catalog_number?: string }).catalog_number ? `RG / ${(m as { catalog_number?: string }).catalog_number}` : "انگشتر"}</p>
+                    <h3 className="line-clamp-2 text-sm font-medium text-[#F5F2EA]">{m.name}</h3>
+                    <p className="text-xs text-[#A8A8A8]">{[m.country, m.year].filter(Boolean).join(" · ") || "—"}</p></div>
+                </Link>); })}
+            </div><div className="mt-14"><Pagination page={page} pageSize={20} total={total} onPageChange={setPage} /></div></>)}
         </div>
       </div>
     </div>
   );
+}
+export default function Page() {
+  return (<Suspense fallback={<div className="min-h-screen bg-[#0D0D0D] museum-shimmer" />}><MuseumRingArchivePage /></Suspense>);
 }
