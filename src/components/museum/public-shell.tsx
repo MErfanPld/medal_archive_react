@@ -43,11 +43,11 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
               />
             </span>
             <span className="leading-tight">
-              <span className="block text-[0.65rem] font-semibold tracking-[0.18em] text-[#C8A75D]">
+              <span className="block text-[0.65rem] font-semibold tracking-[0.12em] text-[#C8A75D]">
                 ناصر صلب
               </span>
               <span className="block text-sm font-semibold text-[#F5F2EA]">
-                آرشیو مدال
+                مجموعه آثار
               </span>
             </span>
           </Link>
@@ -56,8 +56,7 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
             {NAV.map((item) => {
               const active = item.exact
                 ? pathname === item.href
-                : pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
+                : pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
@@ -124,8 +123,7 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
             className="h-12 w-12 object-contain opacity-90 invert"
           />
           <p className="text-xs text-[#A8A8A8]">
-            © {new Date().getFullYear()} ناصر صلب · آرشیو مدال — همه حقوق محفوظ
-            است.
+            © {new Date().getFullYear()} مجموعه آثار ناصر صلب — همه حقوق محفوظ است.
           </p>
         </div>
       </footer>
