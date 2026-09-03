@@ -40,15 +40,15 @@ type ItemLike = {
 };
 
 const DOMAINS = [
-  { key: "medals", href: "/museum/medals", title: "مدال‌ها", en: "Medals", Icon: Award },
-  { key: "coins", href: "/museum/coins", title: "سکه و پول", en: "Coins", Icon: Coins },
-  { key: "banknotes", href: "/museum/banknotes", title: "اسکناس", en: "Banknotes", Icon: Banknote },
-  { key: "antiques", href: "/museum/antiques", title: "آنتیک", en: "Antiques", Icon: Package },
-  { key: "knives", href: "/museum/knives", title: "چاقو", en: "Knives", Icon: Sword },
-  { key: "rings", href: "/museum/rings", title: "انگشتر", en: "Rings", Icon: Gem },
-  { key: "seals", href: "/museum/seals", title: "مهر", en: "Seals", Icon: Hexagon },
-  { key: "stamps", href: "/museum/stamps", title: "تمبر", en: "Stamps", Icon: Stamp },
-  { key: "tasbih", href: "/museum/tasbih", title: "تسبیح", en: "Tasbih", Icon: CircleDot },
+  { key: "medals", href: "/museum/medals", title: "مدال‌ها", en: "مدال", Icon: Award },
+  { key: "coins", href: "/museum/coins", title: "سکه و پول", en: "سکه", Icon: Coins },
+  { key: "banknotes", href: "/museum/banknotes", title: "اسکناس", en: "اسکناس", Icon: Banknote },
+  { key: "antiques", href: "/museum/antiques", title: "آنتیک", en: "آنتیک", Icon: Package },
+  { key: "knives", href: "/museum/knives", title: "چاقو", en: "چاقو", Icon: Sword },
+  { key: "rings", href: "/museum/rings", title: "انگشتر", en: "انگشتر", Icon: Gem },
+  { key: "seals", href: "/museum/seals", title: "مهر", en: "مهر", Icon: Hexagon },
+  { key: "stamps", href: "/museum/stamps", title: "تمبر", en: "تمبر", Icon: Stamp },
+  { key: "tasbih", href: "/museum/tasbih", title: "تسبیح", en: "تسبیح", Icon: CircleDot },
 ] as const;
 
 function imgOf(m: ItemLike) {
@@ -74,7 +74,7 @@ function ItemThumb({
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[#C8A75D]/50">
             <ImageOff className="size-8" strokeWidth={1.25} />
-            <span className="text-[0.65rem] tracking-[0.16em] uppercase">بدون تصویر</span>
+            <span className="text-[0.65rem] tracking-[0.16em]">بدون تصویر</span>
           </div>
         )}
       </div>
@@ -208,12 +208,8 @@ export default function MuseumHomePage() {
     if (!el) return;
     let raf = 0;
     let paused = false;
-    const onEnter = () => {
-      paused = true;
-    };
-    const onLeave = () => {
-      paused = false;
-    };
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
     el.addEventListener("mouseenter", onEnter);
     el.addEventListener("touchstart", onEnter, { passive: true });
     el.addEventListener("mouseleave", onLeave);
@@ -246,30 +242,20 @@ export default function MuseumHomePage() {
     router.push(qs ? `${domain.href}?${qs}` : domain.href);
   };
 
-  const heroItem = medalsQ.data?.results?.[0] ?? coinsQ.data?.results?.[0] ?? null;
-  const heroSrc = heroItem ? imgOf(heroItem) : null;
-
   return (
     <div className="mu-stage">
       <section className="mu-hero" aria-label="Hero">
-        {heroSrc ? (
-          <div className="mu-hero-bg" style={{ backgroundImage: `url(${heroSrc})` }} aria-hidden />
-        ) : (
-          <div
-            className="mu-hero-bg"
-            style={{ background: "radial-gradient(ellipse at 50% 40%, #2a2418 0%, #0d0d0d 70%)" }}
-            aria-hidden
-          />
-        )}
+        <div
+          className="mu-hero-bg"
+          style={{ backgroundImage: "url(/brand/study-banner.jpg)" }}
+          aria-hidden
+        />
         <div className="mu-hero-overlay" aria-hidden />
         <div className="mu-container relative z-10 pb-16 pt-32 sm:pb-20 sm:pt-40">
-          <p className="mu-label mu-anim-rise">Digital Museum · Archive</p>
+          <p className="mu-label mu-anim-rise">ناصر صلب · آرشیو مدال</p>
           <h1 className="museum-serif mu-anim-rise mt-6 max-w-4xl text-5xl font-semibold text-[#F5F2EA] sm:text-6xl lg:text-7xl">
-            MEDAL ARCHIVE
+            آرشیو مدال
           </h1>
-          <p className="mu-anim-rise mt-4 max-w-2xl text-lg font-medium tracking-wide text-[#C8A75D] sm:text-xl">
-            A Digital Museum of Historical Collectibles
-          </p>
           <p className="mu-anim-rise mt-5 max-w-xl text-base leading-8 text-[#A8A8A8] sm:text-lg">
             آرشیو دیجیتال مجموعه‌های تاریخی، مدال‌ها، سکه‌ها و آثار ارزشمند
           </p>
@@ -305,7 +291,7 @@ export default function MuseumHomePage() {
       <section id="categories" className="py-16 sm:py-20">
         <div className="mu-container">
           <div className="mu-anim-rise">
-            <p className="mu-label">Collections</p>
+            <p className="mu-label">مجموعه‌ها</p>
             <h2 className="museum-serif mt-3 text-3xl font-semibold sm:text-4xl">دسته‌بندی مجموعه‌ها</h2>
           </div>
         </div>
@@ -328,20 +314,20 @@ export default function MuseumHomePage() {
         </div>
       </section>
 
-      <DomainSection title="مدال‌ها" en="Medals" href="/museum/medals" items={(medalsQ.data?.results ?? []) as ItemLike[]} label="مدال" />
-      <DomainSection title="سکه و پول" en="Coins" href="/museum/coins" items={(coinsQ.data?.results ?? []) as ItemLike[]} label="سکه" />
-      <DomainSection title="اسکناس" en="Banknotes" href="/museum/banknotes" items={(banknotesQ.data?.results ?? []) as ItemLike[]} label="اسکناس" />
-      <DomainSection title="آنتیک" en="Antiques" href="/museum/antiques" items={(antiquesQ.data?.results ?? []) as ItemLike[]} label="آنتیک" />
-      <DomainSection title="چاقو" en="Knives" href="/museum/knives" items={(knivesQ.data?.results ?? []) as ItemLike[]} label="چاقو" />
-      <DomainSection title="انگشتر" en="Rings" href="/museum/rings" items={(ringsQ.data?.results ?? []) as ItemLike[]} label="انگشتر" />
-      <DomainSection title="مهر" en="Seals" href="/museum/seals" items={(sealsQ.data?.results ?? []) as ItemLike[]} label="مهر" />
-      <DomainSection title="تمبر" en="Stamps" href="/museum/stamps" items={(stampsQ.data?.results ?? []) as ItemLike[]} label="تمبر" />
-      <DomainSection title="تسبیح" en="Tasbih" href="/museum/tasbih" items={(tasbihQ.data?.results ?? []) as ItemLike[]} label="تسبیح" />
+      <DomainSection title="مدال‌ها" en="مدال" href="/museum/medals" items={(medalsQ.data?.results ?? []) as ItemLike[]} label="مدال" />
+      <DomainSection title="سکه و پول" en="سکه" href="/museum/coins" items={(coinsQ.data?.results ?? []) as ItemLike[]} label="سکه" />
+      <DomainSection title="اسکناس" en="اسکناس" href="/museum/banknotes" items={(banknotesQ.data?.results ?? []) as ItemLike[]} label="اسکناس" />
+      <DomainSection title="آنتیک" en="آنتیک" href="/museum/antiques" items={(antiquesQ.data?.results ?? []) as ItemLike[]} label="آنتیک" />
+      <DomainSection title="چاقو" en="چاقو" href="/museum/knives" items={(knivesQ.data?.results ?? []) as ItemLike[]} label="چاقو" />
+      <DomainSection title="انگشتر" en="انگشتر" href="/museum/rings" items={(ringsQ.data?.results ?? []) as ItemLike[]} label="انگشتر" />
+      <DomainSection title="مهر" en="مهر" href="/museum/seals" items={(sealsQ.data?.results ?? []) as ItemLike[]} label="مهر" />
+      <DomainSection title="تمبر" en="تمبر" href="/museum/stamps" items={(stampsQ.data?.results ?? []) as ItemLike[]} label="تمبر" />
+      <DomainSection title="تسبیح" en="تسبیح" href="/museum/tasbih" items={(tasbihQ.data?.results ?? []) as ItemLike[]} label="تسبیح" />
 
       <section className="border-y border-white/5 bg-[#0a0a0a] py-20 sm:py-24">
         <div className="mu-container">
           <div className="mu-search mu-anim-rise">
-            <p className="mu-label">Search the Archive</p>
+            <p className="mu-label">جستجو</p>
             <h2 className="museum-serif mt-3 text-2xl font-semibold sm:text-3xl">جستجو در آرشیو</h2>
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <label className="block space-y-2">
