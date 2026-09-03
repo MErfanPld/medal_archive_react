@@ -51,6 +51,14 @@ export const PERMISSIONS = {
   SEALS_CREATE: "seals.create",
   SEALS_UPDATE: "seals.update",
   SEALS_DELETE: "seals.delete",
+  STAMPS_VIEW: "stamps.view",
+  STAMPS_CREATE: "stamps.create",
+  STAMPS_UPDATE: "stamps.update",
+  STAMPS_DELETE: "stamps.delete",
+  TASBIH_VIEW: "tasbih.view",
+  TASBIH_CREATE: "tasbih.create",
+  TASBIH_UPDATE: "tasbih.update",
+  TASBIH_DELETE: "tasbih.delete",
   REPORTS_VIEW: "reports.view",
   USERS_VIEW: "users.view",
   USERS_MANAGE: "users.manage",
@@ -104,6 +112,14 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.SEALS_CREATE,
     PERMISSIONS.SEALS_UPDATE,
     PERMISSIONS.SEALS_DELETE,
+    PERMISSIONS.STAMPS_VIEW,
+    PERMISSIONS.STAMPS_CREATE,
+    PERMISSIONS.STAMPS_UPDATE,
+    PERMISSIONS.STAMPS_DELETE,
+    PERMISSIONS.TASBIH_VIEW,
+    PERMISSIONS.TASBIH_CREATE,
+    PERMISSIONS.TASBIH_UPDATE,
+    PERMISSIONS.TASBIH_DELETE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   viewer: new Set([
@@ -115,6 +131,8 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.KNIVES_VIEW,
     PERMISSIONS.RINGS_VIEW,
     PERMISSIONS.SEALS_VIEW,
+    PERMISSIONS.STAMPS_VIEW,
+    PERMISSIONS.TASBIH_VIEW,
     PERMISSIONS.REPORTS_VIEW,
   ]),
   editor: new Set([
@@ -142,6 +160,12 @@ const ROLE_CAPABILITIES: Record<string, Set<string>> = {
     PERMISSIONS.SEALS_VIEW,
     PERMISSIONS.SEALS_CREATE,
     PERMISSIONS.SEALS_UPDATE,
+    PERMISSIONS.STAMPS_VIEW,
+    PERMISSIONS.STAMPS_CREATE,
+    PERMISSIONS.STAMPS_UPDATE,
+    PERMISSIONS.TASBIH_VIEW,
+    PERMISSIONS.TASBIH_CREATE,
+    PERMISSIONS.TASBIH_UPDATE,
     PERMISSIONS.REPORTS_VIEW,
   ]),
 };
@@ -249,6 +273,20 @@ export function canViewRings(user: UserMe | null | undefined) {
 export function canViewSeals(user: UserMe | null | undefined) {
   return (
     hasPermission(user, PERMISSIONS.SEALS_VIEW) ||
+    hasPermission(user, PERMISSIONS.ANTIQUES_VIEW) ||
+    hasPermission(user, PERMISSIONS.KNIVES_VIEW)
+  );
+}
+export function canViewStamps(user: UserMe | null | undefined) {
+  return (
+    hasPermission(user, PERMISSIONS.STAMPS_VIEW) ||
+    hasPermission(user, PERMISSIONS.ANTIQUES_VIEW) ||
+    hasPermission(user, PERMISSIONS.KNIVES_VIEW)
+  );
+}
+export function canViewTasbih(user: UserMe | null | undefined) {
+  return (
+    hasPermission(user, PERMISSIONS.TASBIH_VIEW) ||
     hasPermission(user, PERMISSIONS.ANTIQUES_VIEW) ||
     hasPermission(user, PERMISSIONS.KNIVES_VIEW)
   );
