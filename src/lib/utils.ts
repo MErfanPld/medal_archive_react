@@ -1,6 +1,9 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/** Production API origin for absolute media URLs (empty in local rewrite mode). */
+const MEDIA_API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+
 /**
  * Merge Tailwind classes safely (cn utility).
  */
@@ -71,6 +74,7 @@ function extractMediaPath(src: unknown): string | null {
  *   so Next.js rewrite (next.config) proxies to the backend (avoids CORS / wrong host).
  * - Other absolute URLs left as-is.
  * - Relative paths normalized under `/media/` when missing the prefix.
+ * - In production (NEXT_PUBLIC_API_URL set), relative media is prefixed with API host.
  */
 export function resolveMediaUrl(src?: unknown): string | null {
   const raw = extractMediaPath(src);
@@ -117,6 +121,14 @@ export function resolveMediaUrl(src?: unknown): string | null {
     } else if (!path.includes(".") && path.length < 8) {
       return null;
     }
+  }
+
+  // In production, point relative media at the API host
+  if (
+    MEDIA_API_BASE &&
+    (path.startsWith("/media/") || path.startsWith("/api/"))
+  ) {
+    return `${MEDIA_API_BASE}${path}`;
   }
 
   return path;
