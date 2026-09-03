@@ -4,24 +4,17 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
+  subsets: ["arabic"],
   variable: "--font-vazirmatn",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
-  preload: true,
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Medal Archive Pro",
-    template: "%s | Medal Archive Pro",
+    default: "مجموعه آثار ناصر صلب",
+    template: "%s | مجموعه آثار ناصر صلب",
   },
-  description:
-    "آرشیو حرفه‌ای مدال و سکه — پلتفرم مدیریت مجموعه و تجربه موزه‌ای دیجیتال",
-  robots: {
-    index: false,
-    follow: false,
-  },
+  description: "مجموعه آثار ناصر صلب — آرشیو دیجیتال مجموعه‌های تاریخی",
 };
 
 export default function RootLayout({
@@ -30,16 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="fa"
-      dir="rtl"
-      className={`${vazirmatn.variable} h-full`}
-      suppressHydrationWarning
-    >
-      <body
-        className="min-h-full bg-background font-sans text-text antialiased"
-        suppressHydrationWarning
-      >
+    <html lang="fa" dir="rtl" suppressHydrationWarning>
+      <body className={`${vazirmatn.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
