@@ -22,6 +22,14 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/brand/naser-solb-logo.png", type: "image/png" },
+    ],
+    apple: "/brand/naser-solb-logo.png",
+    shortcut: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
