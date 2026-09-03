@@ -105,10 +105,18 @@ body {
   line-height: 1.6;
 }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 ::selection {
-  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
-  color: var(--text);
+  background-color: rgba(200, 167, 93, 0.35);
+  color: #1a1610;
 }
+
+.dark ::selection,
+.museum-public ::selection {
+  background-color: rgba(200, 167, 93, 0.45);
+  color: #f5f2ea;
+}
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
