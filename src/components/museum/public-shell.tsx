@@ -38,16 +38,16 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/brand/naser-solb-logo.png"
-                alt="Naser Solb"
+                alt="ناصر صلب"
                 className="h-8 w-8 object-contain sm:h-9 sm:w-9"
               />
             </span>
             <span className="leading-tight">
-              <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#C8A75D]">
-                Naser Solb
+              <span className="block text-[0.65rem] font-semibold tracking-[0.18em] text-[#C8A75D]">
+                ناصر صلب
               </span>
               <span className="block text-sm font-semibold text-[#F5F2EA]">
-                Medal Archive
+                آرشیو مدال
               </span>
             </span>
           </Link>
@@ -85,12 +85,6 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
               <Search className="size-4" />
               <span className="hidden sm:inline">جستجو</span>
             </button>
-            <Link
-              href="/login"
-              className="hidden rounded-full bg-[#C8A75D] px-4 py-2 text-sm font-medium text-[#0D0D0D] transition hover:bg-[#d4b56e] sm:inline-flex"
-            >
-              ورود
-            </Link>
             <button
               type="button"
               className="rounded-lg p-2 text-[#A8A8A8] lg:hidden"
@@ -114,12 +108,6 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </Link>
               ))}
-              <Link
-                href="/login"
-                className="mt-2 rounded-lg bg-[#C8A75D] px-3 py-2.5 text-center text-sm font-medium text-[#0D0D0D]"
-              >
-                ورود به سامانه
-              </Link>
             </nav>
           </div>
         ) : null}
@@ -132,15 +120,12 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/brand/naser-solb-logo.png"
-            alt="Naser Solb"
+            alt="ناصر صلب"
             className="h-12 w-12 object-contain opacity-90 invert"
           />
           <p className="text-xs text-[#A8A8A8]">
-            © {new Date().getFullYear()} Naser Solb · Medal Archive — همه حقوق
-            محفوظ است.
-          </p>
-          <p className="tracking-[0.2em] text-[0.65rem] uppercase text-[#C8A75D]/60">
-            Digital Museum
+            © {new Date().getFullYear()} ناصر صلب · آرشیو مدال — همه حقوق محفوظ
+            است.
           </p>
         </div>
       </footer>
