@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #6e1f2a;
-  --primary-deep: #43131b;
-  --primary-accent: #9b3a49;
+  --primary: #C8A75D;
+  --primary-deep: #1a1610;
+  --primary-accent: #d4b56e;
   --background: #f7f5f2;
   --surface: #ffffff;
   --surface-muted: #f0ede8;
@@ -42,9 +42,9 @@
 }
 
 .dark {
-  --primary: #c45a6a;
-  --primary-deep: #9b3a49;
-  --primary-accent: #e07a8a;
+  --primary: #C8A75D;
+  --primary-deep: #1a1610;
+  --primary-accent: #d4b56e;
   --background: #12100e;
   --surface: #1c1917;
   --surface-muted: #292524;
@@ -186,7 +186,7 @@ body {
   background:
     radial-gradient(ellipse 80% 60% at 10% 20%, color-mix(in srgb, var(--primary-accent) 28%, transparent), transparent 55%),
     radial-gradient(ellipse 60% 50% at 90% 80%, color-mix(in srgb, var(--primary) 35%, transparent), transparent 50%),
-    linear-gradient(135deg, var(--primary-deep) 0%, var(--primary) 48%, color-mix(in srgb, var(--primary-accent) 85%, #1a0a0c) 100%);
+    linear-gradient(135deg, var(--primary-deep) 0%, #2a2418 48%, #1a1610 100%);
   color: #faf7f4; box-shadow: var(--shadow-lg);
 }
 .hero-museum::after {
