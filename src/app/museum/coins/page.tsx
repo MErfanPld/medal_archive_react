@@ -1,27 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { ImageOff, Search } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
-import { Search } from "lucide-react";
 import { getCoins } from "@/lib/data/coins";
 import { getCategories } from "@/lib/data/categories";
-import { ObjectCard } from "@/components/museum/object-card";
 import { Pagination } from "@/components/ui/pagination";
-import { coinItemTypeLabel } from "@/lib/coin-labels";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, resolveMediaUrl } from "@/lib/utils";
 
-function imgOf(c: { primary_image?: string | null; primary_image_url?: string | null }) {
-  return c.primary_image_url || c.primary_image || null;
+function imgOf(m: {
+  primary_image?: string | null;
+  primary_image_url?: string | null;
+}) {
+  return resolveMediaUrl(m.primary_image_url || m.primary_image || null);
 }
 
-export default function MuseumCoinsArchivePage() {
+function MuseumCoinArchivePage() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const initialCat = searchParams.get("category");
+
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [category, setCategory] = useState<number | undefined>();
+  const [search, setSearch] = useState(initialQ);
+  const [searchInput, setSearchInput] = useState(initialQ);
+  const [category, setCategory] = useState<number | undefined>(
+    initialCat ? Number(initialCat) : undefined
+  );
   const [ordering, setOrdering] = useState("-created_at");
 
   const { data: categoriesData } = useQuery({
@@ -33,70 +41,148 @@ export default function MuseumCoinsArchivePage() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["museum-coins", page, search, category, ordering],
     enabled: isHydrated,
-    queryFn: () => getCoins({ page, search: search || undefined, category, is_active: true, ordering }),
+    queryFn: () =>
+      getCoins({
+        page,
+        search: search || undefined,
+        category,
+        is_active: true,
+        ordering,
+      }),
     retry: 1,
   });
 
-  const coins = data?.results ?? [];
+  const items = data?.results ?? [];
   const total = data?.count ?? 0;
+  const meta = useMemo(() => `${formatNumber(total)} اثر`, [total]);
 
   return (
-    <div>
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
-          <nav className="text-xs text-text-subtle">
-            <Link href="/museum" className="hover:text-text">خانه</Link>
-            <span className="mx-2 opacity-40">/</span>
-            <span className="text-text-muted">آرشیو سکه و پول</span>
+    <div className="mu-stage min-h-screen">
+      <header className="mu-archive-hero">
+        <div className="mu-container">
+          <nav className="mu-anim-rise text-[0.65rem] tracking-[0.2em] text-white/35">
+            <Link href="/museum" className="hover:text-white">خانه</Link>
+            <span className="mx-2">/</span>
+            <span className="text-[#C8A75D]">COIN ARCHIVE</span>
           </nav>
-          <p className="museum-label mt-6 text-primary">Coin Catalog</p>
-          <h1 className="museum-serif mt-3 text-4xl font-semibold text-primary-deep sm:text-5xl">آرشیو سکه و پول</h1>
-          <p className="mt-3 max-w-xl text-sm leading-7 text-text-muted">نمایش موزه‌ای سکه‌ها، اسکناس‌ها و توکن‌ها.</p>
-          <p className="mt-4 text-sm font-medium text-text">{formatNumber(total)} قلم ثبت‌شده</p>
+          <h1 className="museum-serif mu-anim-rise mt-8 text-5xl font-semibold text-white sm:text-6xl lg:text-7xl">
+            Coin<br />Archive
+          </h1>
+          <p className="mu-anim-rise mt-6 max-w-md text-sm leading-7 text-white/55">
+            تالار سکه‌ها — فرم دایره‌ای، بافت فلزی، و روایت اقتصاد و فرهنگ.
+          </p>
+          <p className="mu-label mu-anim-rise mt-8 text-[#c8a75d]">{meta}</p>
         </div>
       </header>
-      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10">
-        <div className="flex flex-col gap-3 border border-border bg-surface p-3 sm:flex-row sm:items-center">
-          <form className="flex min-w-0 flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }}>
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-text-subtle" />
-              <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="جستجو…" className="h-11 w-full border border-border bg-background pr-10 pl-3 text-sm outline-none focus:border-primary" />
-            </div>
-            <button type="submit" className="h-11 shrink-0 bg-primary px-5 text-sm font-medium text-white hover:bg-primary-deep">جستجو</button>
+
+      <div className="mu-container">
+        <div className="mu-filter-bar mu-anim-rise">
+          <form
+            className="flex min-w-0 flex-1 gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearch(searchInput);
+              setPage(1);
+            }}
+          >
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="جستجو در آرشیو…"
+              className="min-w-0 flex-1"
+            />
+            <button type="submit" className="inline-flex h-11 items-center gap-2 text-sm text-[#C8A75D]">
+              <Search className="size-4" />
+              جستجو
+            </button>
           </form>
-          <select className="h-11 border border-border bg-background px-3 text-sm" value={category ?? ""} onChange={(e) => { setCategory(e.target.value ? Number(e.target.value) : undefined); setPage(1); }}>
-            <option value="">همه دسته‌ها</option>
-            {categoriesData?.results?.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+          <select
+            value={category ?? ""}
+            onChange={(e) => {
+              setCategory(e.target.value ? Number(e.target.value) : undefined);
+              setPage(1);
+            }}
+          >
+            <option value="">دسته</option>
+            {categoriesData?.results?.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
-          <select className="h-11 border border-border bg-background px-3 text-sm" value={ordering} onChange={(e) => { setOrdering(e.target.value); setPage(1); }}>
+          <select
+            value={ordering}
+            onChange={(e) => {
+              setOrdering(e.target.value);
+              setPage(1);
+            }}
+          >
             <option value="-created_at">جدیدترین</option>
             <option value="created_at">قدیمی‌ترین</option>
-            <option value="-year">سال (نزولی)</option>
-            <option value="name">الفبایی</option>
+            <option value="-year">سال ↓</option>
+            <option value="year">سال ↑</option>
+            <option value="name">الفبا</option>
           </select>
         </div>
-        {isError ? (
-          <div className="mt-12 border border-danger/30 bg-danger-bg/40 px-4 py-12 text-center">
-            <p className="font-medium text-danger">خطا در دریافت آرشیو</p>
-            <button type="button" onClick={() => refetch()} className="mt-4 bg-primary px-4 py-2 text-sm text-white">تلاش مجدد</button>
-          </div>
-        ) : isLoading ? (
-          <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="museum-shimmer aspect-[3/4] rounded-md" />))}</div>
-        ) : coins.length === 0 ? (
-          <div className="mt-16 border border-dashed border-border px-6 py-16 text-center">
-            <p className="text-sm text-text-muted">اثری با این مشخصات پیدا نشد.</p>
-          </div>
-        ) : (
-          <>
-            <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
-              {coins.map((c, i) => (
-                <ObjectCard key={c.id} href={`/museum/coins/${c.id}`} name={c.name} year={c.year} country={c.country} category={c.material || coinItemTypeLabel(c.item_type)} archiveNo={c.catalog_number ? `COIN / ${c.catalog_number}` : null} image={imgOf(c)} kind="coin" index={i} />
+
+        <div className="py-12 sm:py-16">
+          {isError ? (
+            <div className="py-20 text-center text-white/70">
+              <p>{(error as Error)?.message}</p>
+              <button type="button" onClick={() => refetch()} className="mt-4 text-[#C8A75D]">تلاش مجدد</button>
+            </div>
+          ) : isLoading ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="museum-shimmer aspect-square rounded-sm" />
               ))}
             </div>
-            <div className="mt-10"><Pagination page={page} pageSize={20} total={total} onPageChange={setPage} /></div>
-          </>
-        )}
+          ) : items.length === 0 ? (
+            <p className="py-24 text-center text-sm text-white/50">نتیجه‌ای یافت نشد.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+                {items.map((m) => {
+                  const src = imgOf(m);
+                  return (
+                    <Link key={m.id} href={`/museum/coins/${m.id}`} className="mu-item-card">
+                      <div className="relative aspect-square overflow-hidden bg-[#0d0d0d]">
+                        {src ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={src} alt={m.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[#C8A75D]/50">
+                            <ImageOff className="size-8" strokeWidth={1.25} />
+                            <span className="text-[0.65rem] tracking-[0.16em] uppercase">بدون تصویر</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1 p-4">
+                        <p className="text-[0.65rem] tracking-[0.16em] text-[#C8A75D]">
+                          {m.catalog_number ? `CN / ${m.catalog_number}` : "سکه"}
+                        </p>
+                        <h3 className="line-clamp-2 text-sm font-medium text-[#F5F2EA]">{m.name}</h3>
+                        <p className="text-xs text-[#A8A8A8]">
+                          {[m.country, m.year].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="mt-14">
+                <Pagination page={page} pageSize={20} total={total} onPageChange={setPage} />
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0D0D0D] museum-shimmer" />}>
+      <MuseumCoinArchivePage />
+    </Suspense>
   );
 }
