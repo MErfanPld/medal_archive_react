@@ -12,6 +12,8 @@ import {
   Sword,
   Package,
   Hexagon,
+  Stamp,
+  CircleDot,
   FolderOpen,
   Users,
   Shield,
@@ -36,6 +38,8 @@ import {
   canViewKnives,
   canViewRings,
   canViewSeals,
+  canViewStamps,
+  canViewTasbih,
   canViewCategories,
   canViewReports,
   canViewUsers,
@@ -118,6 +122,18 @@ const NAV_GROUPS: NavGroup[] = [
         visible: (u) => canViewSeals(u),
       },
       {
+        href: "/admin/stamps",
+        label: "تمبر",
+        icon: Stamp,
+        visible: (u) => canViewStamps(u),
+      },
+      {
+        href: "/admin/tasbih",
+        label: "تسبیح",
+        icon: CircleDot,
+        visible: (u) => canViewTasbih(u),
+      },
+      {
         href: "/admin/categories",
         label: "دسته‌بندی‌ها",
         icon: FolderOpen,
@@ -150,7 +166,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: "users",
+    id: "admin",
     label: "مدیریت",
     items: [
       {
@@ -161,7 +177,7 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         href: "/admin/users/invite",
-        label: "دعوت‌ها",
+        label: "دعوت کاربر",
         icon: UserPlus,
         visible: (u) => canManageUsers(u),
       },
@@ -172,29 +188,11 @@ const NAV_GROUPS: NavGroup[] = [
         visible: (u) => canViewRoles(u),
       },
       {
-        href: "/admin/permissions",
-        label: "دسترسی‌ها",
-        icon: KeyRound,
-        visible: (u) => canViewRoles(u),
-      },
-    ],
-  },
-  {
-    id: "reports",
-    label: "تحلیل",
-    items: [
-      {
         href: "/admin/reports",
         label: "گزارش‌ها",
         icon: BarChart3,
         visible: (u) => canViewReports(u),
       },
-    ],
-  },
-  {
-    id: "settings",
-    label: "سیستم",
-    items: [
       {
         href: "/admin/settings",
         label: "تنظیمات",
@@ -205,233 +203,144 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-interface SidebarProps {
-  open?: boolean;
-  onClose?: () => void;
-  collapsed?: boolean;
-}
-
-function isActive(pathname: string, href: string) {
-  if (pathname === href) return true;
-  if (href === "/admin/dashboard") return false;
-  if (href === "/museum") return pathname === "/museum";
-  return pathname.startsWith(href + "/") || pathname === href;
-}
-
-export function AdminSidebar({ open, onClose, collapsed = false }: SidebarProps) {
+export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const groups = NAV_GROUPS.map((g) => ({
-    ...g,
-    items: g.items.filter((item) => item.visible(user)),
-  })).filter((g) => g.items.length > 0);
-
-  const displayName =
-    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-    user?.username ||
-    "کاربر";
-  const roleLabel = user?.roles?.[0]?.name || "—";
-  const initials =
-    [user?.first_name?.[0], user?.last_name?.[0]]
-      .filter(Boolean)
-      .join("")
-      .toUpperCase() ||
-    user?.username?.[0]?.toUpperCase() ||
-    "؟";
-
   useEffect(() => {
-    function onDocClick(e: MouseEvent) {
+    if (!userMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [userMenuOpen]);
 
   const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await logout();
-      document.cookie = "medal_auth=; path=/; max-age=0";
-      router.replace("/login");
-    } finally {
-      setLoggingOut(false);
-    }
+    await logout();
+    router.push("/login");
   };
 
   return (
     <>
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           onClick={onClose}
           aria-hidden
         />
       )}
-
       <aside
         className={cn(
-          "sidebar-rail fixed inset-y-0 right-0 z-50 flex flex-col transition-[transform,width] duration-200 ease-out lg:static lg:translate-x-0",
-          collapsed ? "w-[4.5rem]" : "w-[17rem]",
+          "fixed inset-y-0 right-0 z-50 flex w-64 flex-col border-l border-border bg-surface transition-transform lg:static lg:translate-x-0",
           open ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
-        aria-label="منوی اصلی"
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/80 px-4">
-          {!collapsed && (
-            <Link
-              href="/admin/dashboard"
-              className="group flex items-center gap-2.5"
-            >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white shadow-md shadow-primary/25 transition-transform duration-150 group-hover:scale-[1.03]">
-                <Medal className="size-4" aria-hidden />
-              </span>
-              <span className="leading-tight">
-                <span className="block text-sm font-semibold tracking-tight text-text">
-                  Medal Archive
-                </span>
-                <span className="block text-[10px] font-medium text-text-subtle">
-                  موزه دیجیتال
-                </span>
-              </span>
-            </Link>
-          )}
-          {collapsed && (
-            <Link
-              href="/admin/dashboard"
-              className="mx-auto flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white shadow-md"
-              title="Medal Archive"
-            >
-              <Medal className="size-4" />
-            </Link>
-          )}
+        <div className="flex h-14 items-center justify-between border-b border-border px-4">
+          <Link href="/admin/dashboard" className="font-semibold text-text">
+            آرشیو مدال
+          </Link>
           <button
             type="button"
-            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-muted lg:hidden"
+            className="rounded-md p-1 text-text-muted hover:bg-surface-muted lg:hidden"
             onClick={onClose}
-            aria-label="بستن منو"
+            aria-label="بستن"
           >
             <X className="size-5" />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="space-y-6">
-            {groups.map((group) => (
-              <div key={group.id}>
-                {!collapsed && group.label ? (
-                  <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-subtle">
+        <nav className="flex-1 overflow-y-auto p-3">
+          {NAV_GROUPS.map((group) => {
+            const items = group.items.filter((item) => item.visible(user));
+            if (!items.length) return null;
+            return (
+              <div key={group.id} className="mb-4">
+                {group.label && (
+                  <p className="mb-1.5 px-2 text-xs font-medium text-text-muted">
                     {group.label}
                   </p>
-                ) : null}
-                <ul className="space-y-1">
-                  {group.items.map((item) => {
-                    const active = isActive(pathname, item.href);
+                )}
+                <ul className="space-y-0.5">
+                  {items.map((item) => {
+                    const active =
+                      pathname === item.href ||
+                      (item.href !== "/admin/dashboard" &&
+                        pathname.startsWith(item.href));
                     const Icon = item.icon;
                     return (
                       <li key={item.href}>
                         <Link
                           href={item.href}
                           onClick={onClose}
-                          title={collapsed ? item.label : undefined}
                           className={cn(
-                            "nav-item",
-                            active && "nav-item-active",
-                            collapsed && "justify-center px-2"
+                            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
+                            active
+                              ? "bg-primary/10 font-medium text-primary"
+                              : "text-text-muted hover:bg-surface-muted hover:text-text"
                           )}
-                          aria-current={active ? "page" : undefined}
                         >
-                          <Icon
-                            className={cn(
-                              "nav-item-icon size-[1.125rem] shrink-0",
-                              active && "text-primary"
-                            )}
-                            aria-hidden
-                          />
-                          {!collapsed && <span>{item.label}</span>}
+                          <Icon className="size-4 shrink-0" />
+                          {item.label}
                         </Link>
                       </li>
                     );
                   })}
                 </ul>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </nav>
 
-        {!collapsed && user && (
-          <div
-            className="relative shrink-0 border-t border-border/80 p-3"
-            ref={menuRef}
+        <div className="relative border-t border-border p-3" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen((v) => !v)}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-surface-muted"
           >
-            {userMenuOpen && (
-              <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-surface shadow-lg animate-fade-up">
-                <Link
-                  href="/profile"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    onClose?.();
-                  }}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-text transition-colors hover:bg-surface-muted"
-                >
-                  <UserIcon className="size-4 text-text-muted" />
-                  پروفایل
-                </Link>
-                <Link
-                  href="/admin/settings"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    onClose?.();
-                  }}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-text transition-colors hover:bg-surface-muted"
-                >
-                  <Settings className="size-4 text-text-muted" />
-                  تنظیمات
-                </Link>
-                <button
-                  type="button"
-                  disabled={loggingOut}
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
-                >
-                  <LogOut className="size-4" />
-                  {loggingOut ? "در حال خروج…" : "خروج"}
-                </button>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setUserMenuOpen((v) => !v)}
-              className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-surface-muted/50 px-3 py-2.5 text-right transition-all duration-150 hover:border-primary/20 hover:bg-surface-muted"
-              aria-expanded={userMenuOpen}
-              aria-haspopup="menu"
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/25 to-primary/10 text-xs font-semibold text-primary-deep ring-2 ring-primary/10">
-                {initials}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-text">
-                  {displayName}
-                </span>
-                <span className="block truncate text-xs text-text-muted">
-                  {roleLabel}
-                </span>
-              </span>
-              <ChevronUp
-                className={cn(
-                  "size-4 shrink-0 text-text-subtle transition-transform duration-150",
-                  userMenuOpen ? "rotate-0" : "rotate-180"
-                )}
-              />
-            </button>
-          </div>
-        )}
+            <div className="flex size-8 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <UserIcon className="size-4" />
+            </div>
+            <div className="min-w-0 flex-1 text-right">
+              <p className="truncate font-medium text-text">
+                {user?.full_name || user?.username || "کاربر"}
+              </p>
+              <p className="truncate text-xs text-text-muted">
+                {user?.email || ""}
+              </p>
+            </div>
+            <ChevronUp
+              className={cn(
+                "size-4 text-text-muted transition-transform",
+                !userMenuOpen && "rotate-180"
+              )}
+            />
+          </button>
+          {userMenuOpen && (
+            <div className="absolute bottom-full left-3 right-3 mb-1 rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <Link
+                href="/profile"
+                className="block px-3 py-2 text-sm hover:bg-surface-muted"
+                onClick={() => setUserMenuOpen(false)}
+              >
+                پروفایل
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-surface-muted"
+              >
+                <LogOut className="size-4" />
+                خروج
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );
