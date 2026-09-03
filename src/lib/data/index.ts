@@ -6,3 +6,5 @@ export * from "./antiques";
 export * from "./knives";
 export * from "./rings";
 export * from "./seals";
+export * from "./stamps";
+export * from "./tasbih";
