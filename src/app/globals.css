@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
-/* Vazirmatn — CDN (works on Iran servers better than Google Fonts) */
-@import url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css");
-
+/* Vazirmatn local files in /public/fonts — CDN is loaded from layout.tsx <link> */
 @font-face {
   font-family: "Vazirmatn";
   src: url("/fonts/Vazirmatn-Regular.woff2") format("woff2");
