@@ -35,8 +35,18 @@ export default function RootLayout({
       className="h-full"
       suppressHydrationWarning
     >
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
+        />
+      </head>
       <body
         className="min-h-full bg-background font-sans text-text antialiased"
+        style={{
+          fontFamily:
+            '"Vazirmatn", "Vazir", Tahoma, "Segoe UI", system-ui, sans-serif',
+        }}
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>
