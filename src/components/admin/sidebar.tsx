@@ -243,7 +243,7 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
       >
         <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <Link href="/admin/dashboard" className="font-semibold text-text">
-            آرشیو مدال
+            پنل مدیریت آثار ناصر صلب
           </Link>
           <button
             type="button"
