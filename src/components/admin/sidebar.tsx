@@ -21,12 +21,10 @@ import {
   Settings,
   Landmark,
   UserPlus,
-  KeyRound,
   X,
   LogOut,
   User as UserIcon,
   ChevronUp,
-  Image as ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore, logout } from "@/stores/auth-store";
@@ -151,18 +149,6 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Landmark,
         visible: () => true,
       },
-      {
-        href: "/museum/medals",
-        label: "گالری مدال‌ها",
-        icon: ImageIcon,
-        visible: () => true,
-      },
-      {
-        href: "/museum/coins",
-        label: "گالری سکه و پول",
-        icon: Coins,
-        visible: () => true,
-      },
     ],
   },
   {
@@ -226,6 +212,11 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
     router.push("/login");
   };
 
+  const displayName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+    user?.username ||
+    "کاربر";
+
   return (
     <>
       {open && (
@@ -242,8 +233,18 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
         )}
       >
         <div className="flex h-14 items-center justify-between border-b border-border px-4">
-          <Link href="/admin/dashboard" className="font-semibold text-text">
-            پنل مدیریت آثار ناصر صلب
+          <Link href="/admin/dashboard" className="flex items-center gap-2.5 min-w-0">
+            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/naser-solb-logo.png"
+                alt="لوگو مجموعه آثار ناصر صلب"
+                className="size-full object-contain p-0.5"
+              />
+            </span>
+            <span className="truncate text-sm font-semibold text-text">
+              پنل مدیریت آثار ناصر صلب
+            </span>
           </Link>
           <button
             type="button"
@@ -307,12 +308,8 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
               <UserIcon className="size-4" />
             </div>
             <div className="min-w-0 flex-1 text-right">
-              <p className="truncate font-medium text-text">
-                {user?.full_name || user?.username || "کاربر"}
-              </p>
-              <p className="truncate text-xs text-text-muted">
-                {user?.email || ""}
-              </p>
+              <p className="truncate font-medium text-text">{displayName}</p>
+              <p className="truncate text-xs text-text-muted">{user?.email || ""}</p>
             </div>
             <ChevronUp
               className={cn(
