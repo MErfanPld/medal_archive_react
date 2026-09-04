@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/invite", "/activate"];
+/**
+ * Route protection — only the admin panel requires login.
+ * Public museum site (/museum, /, etc.) is open without auth.
+ */
+
+const PUBLIC_PATHS = ["/", "/login", "/invite", "/activate", "/museum"];
 const AUTH_COOKIE = "medal_auth";
 
 export function middleware(request: NextRequest) {
@@ -18,8 +23,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isProtected =
-    pathname.startsWith("/admin") || pathname.startsWith("/museum");
+  // Only admin panel requires login
+  const isProtected = pathname.startsWith("/admin");
 
   if (!isProtected) {
     return NextResponse.next();
