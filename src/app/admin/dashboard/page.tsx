@@ -37,7 +37,7 @@ const COLLECTIONS: {
   accent: string;
   bar: string;
 }[] = [
-  { key: "medals", label: "مدال‌ها", href: "/admin/medals", newHref: "/admin/medals/new", icon: Medal, accent: "bg-[#C8A75D]/15 text-[#8B6914]", bar: "#C8A75D" },
+  { key: "medals", label: "مدال‌ها", href: "/admin/medals", newHref: "/admin/medals/new", icon: Medal, accent: "bg-primary/15 text-primary-deep", bar: "#6E1F2A" },
   { key: "coins", label: "سکه و پول", href: "/admin/coins", newHref: "/admin/coins/new", icon: Coins, accent: "bg-amber-500/15 text-amber-700 dark:text-amber-400", bar: "#D4A017" },
   { key: "banknotes", label: "اسکناس", href: "/admin/banknotes", newHref: "/admin/banknotes/new", icon: Banknote, accent: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", bar: "#2D6A4F" },
   { key: "antiques", label: "آنتیک", href: "/admin/antiques", newHref: "/admin/antiques/new", icon: Package, accent: "bg-stone-500/15 text-stone-700 dark:text-stone-300", bar: "#78716C" },
@@ -196,24 +196,17 @@ export default function DashboardPage() {
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Skeleton className="h-72 rounded-xl lg:col-span-2" />
-          <Skeleton className="h-72 rounded-xl" />
-        </div>
       </div>
     );
   }
 
   const anyError = collectionQueries.every((q) => q.isError);
-
   if (anyError && totalItems === 0) {
     return (
       <Alert variant="danger" title="خطا در بارگذاری داشبورد">
         اتصال به API برقرار نشد.
         <div className="mt-3">
-          <Button type="button" variant="outline" size="sm" onClick={refetchAll}>
-            تلاش مجدد
-          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={refetchAll}>تلاش مجدد</Button>
         </div>
       </Alert>
     );
@@ -221,57 +214,48 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-bl from-[#1a1610] via-[#2a2418] to-[#1a1610] p-6 text-[#F5F2EA] shadow-lg sm:p-8">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-bl from-[#43131B] via-[#5a1822] to-[#2a0f14] p-6 text-[#F5F2EA] shadow-lg sm:p-8">
         <div
           className="pointer-events-none absolute inset-0 opacity-30"
           style={{
             background:
-              "radial-gradient(ellipse 60% 80% at 90% 20%, rgba(200,167,93,0.35), transparent 55%)",
+              "radial-gradient(ellipse 60% 80% at 90% 20%, rgba(110,31,42,0.55), transparent 55%)",
           }}
         />
         <div className="relative z-[1] flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm text-[#C8A75D]/90">{todayLabel}</p>
+            <p className="text-sm text-rose-200/90">{todayLabel}</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
               سلام، {displayName}
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#A8A8A8]">
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
               نمای کلی مجموعه آثار ناصر صلب — همه دسته‌بندی‌ها، آمار و آخرین ثبت‌ها.
             </p>
             <div className="mt-5 flex flex-wrap gap-4 text-sm">
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
-                <p className="text-xs text-[#A8A8A8]">کل آثار</p>
-                <p className="mt-0.5 text-xl font-semibold tabular-nums text-[#C8A75D]">
-                  {formatNumber(totalItems)}
-                </p>
+                <p className="text-xs text-white/60">کل آثار</p>
+                <p className="mt-0.5 text-xl font-semibold tabular-nums text-rose-200">{formatNumber(totalItems)}</p>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
-                <p className="text-xs text-[#A8A8A8]">دسته‌بندی‌ها</p>
+                <p className="text-xs text-white/60">دسته‌بندی‌ها</p>
                 <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatNumber(totalCategories)}</p>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
-                <p className="text-xs text-[#A8A8A8]">کاربران</p>
+                <p className="text-xs text-white/60">کاربران</p>
                 <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatNumber(totalUsers)}</p>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
-                <p className="text-xs text-[#A8A8A8]">انواع مجموعه</p>
+                <p className="text-xs text-white/60">انواع مجموعه</p>
                 <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatNumber(COLLECTIONS.length)}</p>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-white/20 bg-white/5 text-[#F5F2EA] hover:bg-white/10"
-              onClick={refetchAll}
-              disabled={isFetching}
-            >
+            <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white/5 text-[#F5F2EA] hover:bg-white/10" onClick={refetchAll} disabled={isFetching}>
               <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
               به‌روزرسانی
             </Button>
-            <Button asChild size="sm" className="bg-[#C8A75D] text-[#1a1610] hover:bg-[#d4b56e]">
+            <Button asChild size="sm" className="bg-primary text-white hover:bg-primary-accent">
               <Link href="/museum">
                 <Landmark className="size-4" />
                 نمای عمومی
@@ -287,26 +271,17 @@ export default function DashboardPage() {
             <Layers className="size-5 text-primary" />
             <h2 className="text-section-title">آمار مجموعه‌ها</h2>
           </div>
-          <p className="text-xs text-text-muted">
-            {formatNumber(totalItems)} اثر در {formatNumber(COLLECTIONS.length)} دسته
-          </p>
+          <p className="text-xs text-text-muted">{formatNumber(totalItems)} اثر در {formatNumber(COLLECTIONS.length)} دسته</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           {COLLECTIONS.map((c) => {
             const Icon = c.icon;
-            const value = counts[c.key];
             return (
-              <Link
-                key={c.key}
-                href={c.href}
-                className="group relative overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-              >
+              <Link key={c.key} href={c.href} className="group relative overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-sm text-text-muted">{c.label}</p>
-                    <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-text">
-                      {formatNumber(value)}
-                    </p>
+                    <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-text">{formatNumber(counts[c.key])}</p>
                   </div>
                   <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105", c.accent)}>
                     <Icon className="size-4" />
@@ -341,10 +316,7 @@ export default function DashboardPage() {
                       <span className="tabular-nums text-text-muted">{formatNumber(d.value)}</span>
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.max(pct, 4)}%`, background: d.color }}
-                      />
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, 4)}%`, background: d.color }} />
                     </div>
                   </Link>
                 );
@@ -362,11 +334,7 @@ export default function DashboardPage() {
             {COLLECTIONS.map((c) => {
               const Icon = c.icon;
               return (
-                <Link
-                  key={c.key}
-                  href={c.newHref}
-                  className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface-muted/40 px-2.5 py-2.5 text-xs font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/5"
-                >
+                <Link key={c.key} href={c.newHref} className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface-muted/40 px-2.5 py-2.5 text-xs font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/5">
                   <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", c.accent)}>
                     <Icon className="size-3.5" />
                   </span>
@@ -377,12 +345,10 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 space-y-2 border-t border-border pt-4">
             <Link href="/admin/categories" className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text">
-              <FolderOpen className="size-4" />
-              مدیریت دسته‌بندی‌ها
+              <FolderOpen className="size-4" /> مدیریت دسته‌بندی‌ها
             </Link>
             <Link href="/admin/users" className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text">
-              <Users className="size-4" />
-              مدیریت کاربران
+              <Users className="size-4" /> مدیریت کاربران
             </Link>
           </div>
         </div>
@@ -396,7 +362,6 @@ export default function DashboardPage() {
         {recentItems.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm font-medium text-text">هنوز اثری ثبت نشده</p>
-            <p className="mt-1 text-xs text-text-muted">از بخش «ثبت سریع» اولین اثر را اضافه کنید.</p>
           </div>
         ) : (
           <ul className="divide-y divide-border">
@@ -417,8 +382,7 @@ export default function DashboardPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-text">{item.name}</p>
                       <p className="mt-0.5 text-xs text-text-muted">
-                        {item.typeLabel}
-                        {item.created_at ? ` · ${formatDate(item.created_at)}` : ""}
+                        {item.typeLabel}{item.created_at ? ` · ${formatDate(item.created_at)}` : ""}
                       </p>
                     </div>
                     <ArrowUpLeft className="size-4 shrink-0 text-text-subtle" />
@@ -434,17 +398,11 @@ export default function DashboardPage() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-section-title">دسته‌بندی‌ها</h2>
-            <Link href="/admin/categories" className="text-xs font-medium text-primary hover:underline">
-              مشاهده همه
-            </Link>
+            <Link href="/admin/categories" className="text-xs font-medium text-primary hover:underline">مشاهده همه</Link>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {(categoriesQ.data?.results ?? []).slice(0, 8).map((c) => (
-              <Link
-                key={c.id}
-                href="/admin/categories"
-                className="rounded-xl border border-border bg-surface-muted/30 px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-sm"
-              >
+              <Link key={c.id} href="/admin/categories" className="rounded-xl border border-border bg-surface-muted/30 px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-sm">
                 <p className="font-medium text-text">{c.name}</p>
                 <p className="mt-1 line-clamp-1 text-xs text-text-muted">{c.description || "بدون توضیح"}</p>
               </Link>
