@@ -7,6 +7,7 @@ const variants = {
   success: "bg-success-bg text-success",
   warning: "bg-warning-bg text-warning",
   danger: "bg-danger-bg text-danger",
+  secondary: "bg-surface-muted text-text-muted border border-border",
   outline: "border border-border text-text-muted",
 } as const;
 
