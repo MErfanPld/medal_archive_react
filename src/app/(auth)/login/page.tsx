@@ -188,11 +188,11 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <Link href="/" className="inline-block">
             <h1 className="text-2xl font-semibold tracking-tight text-primary-deep">
-              Medal Archive Pro
+              پنل مدیریت آثار ناصر صلب
             </h1>
           </Link>
           <p className="mt-2 text-sm text-text-muted">
-            ورود به پنل مدیریت و آرشیو
+            ورود به پنل مدیریت آثار ناصر صلب
           </p>
         </div>
 
