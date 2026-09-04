@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "icon";
   loading?: boolean;
   /**
    * When true, styles/behavior are applied to the single child element
@@ -29,6 +29,7 @@ const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
   sm: "h-8 px-3 text-xs",
   md: "h-10 px-4 text-sm",
   lg: "h-11 px-6 text-sm",
+  icon: "h-9 w-9 p-0",
 };
 
 function buttonClassName(
