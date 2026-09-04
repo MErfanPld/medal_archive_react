@@ -37,15 +37,15 @@ const COLLECTIONS: {
   accent: string;
   bar: string;
 }[] = [
-  { key: "medals", label: "مدال‌ها", href: "/admin/medals", newHref: "/admin/medals/new", icon: Medal, accent: "bg-primary/15 text-primary-deep", bar: "#6E1F2A" },
-  { key: "coins", label: "سکه و پول", href: "/admin/coins", newHref: "/admin/coins/new", icon: Coins, accent: "bg-amber-500/15 text-amber-700 dark:text-amber-400", bar: "#D4A017" },
-  { key: "banknotes", label: "اسکناس", href: "/admin/banknotes", newHref: "/admin/banknotes/new", icon: Banknote, accent: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", bar: "#2D6A4F" },
-  { key: "antiques", label: "آنتیک", href: "/admin/antiques", newHref: "/admin/antiques/new", icon: Package, accent: "bg-stone-500/15 text-stone-700 dark:text-stone-300", bar: "#78716C" },
-  { key: "knives", label: "چاقو", href: "/admin/knives", newHref: "/admin/knives/new", icon: Sword, accent: "bg-slate-500/15 text-slate-700 dark:text-slate-300", bar: "#475569" },
-  { key: "rings", label: "انگشتر", href: "/admin/rings", newHref: "/admin/rings/new", icon: Gem, accent: "bg-violet-500/15 text-violet-700 dark:text-violet-400", bar: "#7C3AED" },
-  { key: "seals", label: "مهر", href: "/admin/seals", newHref: "/admin/seals/new", icon: Hexagon, accent: "bg-sky-500/15 text-sky-700 dark:text-sky-400", bar: "#0284C7" },
-  { key: "stamps", label: "تمبر", href: "/admin/stamps", newHref: "/admin/stamps/new", icon: Stamp, accent: "bg-rose-500/15 text-rose-700 dark:text-rose-400", bar: "#E11D48" },
-  { key: "tasbih", label: "تسبیح", href: "/admin/tasbih", newHref: "/admin/tasbih/new", icon: CircleDot, accent: "bg-teal-500/15 text-teal-700 dark:text-teal-400", bar: "#0D9488" },
+  { key: "medals", label: "مدال‌ها", href: "/admin/medals", newHref: "/admin/medals/new", icon: Medal, accent: "bg-rose-600 text-white shadow-md shadow-rose-600/30", bar: "#6E1F2A" },
+  { key: "coins", label: "سکه و پول", href: "/admin/coins", newHref: "/admin/coins/new", icon: Coins, accent: "bg-amber-500 text-white shadow-md shadow-amber-500/30", bar: "#D4A017" },
+  { key: "banknotes", label: "اسکناس", href: "/admin/banknotes", newHref: "/admin/banknotes/new", icon: Banknote, accent: "bg-emerald-600 text-white shadow-md shadow-emerald-600/30", bar: "#2D6A4F" },
+  { key: "antiques", label: "آنتیک", href: "/admin/antiques", newHref: "/admin/antiques/new", icon: Package, accent: "bg-orange-600 text-white shadow-md shadow-orange-600/30", bar: "#C2410C" },
+  { key: "knives", label: "چاقو", href: "/admin/knives", newHref: "/admin/knives/new", icon: Sword, accent: "bg-slate-700 text-white shadow-md shadow-slate-700/30", bar: "#334155" },
+  { key: "rings", label: "انگشتر", href: "/admin/rings", newHref: "/admin/rings/new", icon: Gem, accent: "bg-violet-600 text-white shadow-md shadow-violet-600/30", bar: "#7C3AED" },
+  { key: "seals", label: "مهر", href: "/admin/seals", newHref: "/admin/seals/new", icon: Hexagon, accent: "bg-sky-600 text-white shadow-md shadow-sky-600/30", bar: "#0284C7" },
+  { key: "stamps", label: "تمبر", href: "/admin/stamps", newHref: "/admin/stamps/new", icon: Stamp, accent: "bg-pink-600 text-white shadow-md shadow-pink-600/30", bar: "#DB2777" },
+  { key: "tasbih", label: "تسبیح", href: "/admin/tasbih", newHref: "/admin/tasbih/new", icon: CircleDot, accent: "bg-teal-600 text-white shadow-md shadow-teal-600/30", bar: "#0D9488" },
 ];
 
 const listFetchers: Record<
@@ -174,12 +174,14 @@ export default function DashboardPage() {
     return items.slice(0, 10);
   }, [collectionQueries]);
 
-  const todayLabel = new Intl.DateTimeFormat("fa-IR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date());
+  const todayLabel = (() => {
+    const d = new Date();
+    const weekday = new Intl.DateTimeFormat("fa-IR", { weekday: "long" }).format(d);
+    const day = new Intl.DateTimeFormat("fa-IR", { day: "numeric" }).format(d);
+    const month = new Intl.DateTimeFormat("fa-IR", { month: "long" }).format(d);
+    const year = new Intl.DateTimeFormat("fa-IR", { year: "numeric" }).format(d);
+    return `${weekday}، ${day} ${month} ${year}`;
+  })();
 
   const refetchAll = () => {
     collectionQueries.forEach((q) => q.refetch());
@@ -283,8 +285,8 @@ export default function DashboardPage() {
                     <p className="text-sm text-text-muted">{c.label}</p>
                     <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-text">{formatNumber(counts[c.key])}</p>
                   </div>
-                  <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105", c.accent)}>
-                    <Icon className="size-4" />
+                  <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-110", c.accent)}>
+                    <Icon className="size-5" />
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-text-subtle">
@@ -335,7 +337,7 @@ export default function DashboardPage() {
               const Icon = c.icon;
               return (
                 <Link key={c.key} href={c.newHref} className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface-muted/40 px-2.5 py-2.5 text-xs font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/5">
-                  <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", c.accent)}>
+                  <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", c.accent)}>
                     <Icon className="size-3.5" />
                   </span>
                   <span className="truncate">افزودن {c.label}</span>
