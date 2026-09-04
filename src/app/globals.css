@@ -1,9 +1,42 @@
 @import "tailwindcss";
 
+/* Vazirmatn — CDN (works on Iran servers better than Google Fonts) */
+@import url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css");
+
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --primary: #C8A75D;
-  --primary-deep: #1a1610;
-  --primary-accent: #d4b56e;
+  /* زرشکی — پنل ادمین */
+  --primary: #6E1F2A;
+  --primary-deep: #43131B;
+  --primary-accent: #9B3A49;
   --background: #f7f5f2;
   --surface: #ffffff;
   --surface-muted: #f0ede8;
@@ -42,9 +75,9 @@
 }
 
 .dark {
-  --primary: #C8A75D;
-  --primary-deep: #1a1610;
-  --primary-accent: #d4b56e;
+  --primary: #C45A6A;
+  --primary-deep: #6E1F2A;
+  --primary-accent: #E08A96;
   --background: #12100e;
   --surface: #1c1917;
   --surface-muted: #292524;
@@ -88,7 +121,7 @@
   --color-danger-bg: var(--danger-bg);
   --color-info: var(--info);
   --color-info-bg: var(--info-bg);
-  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Vazirmatn", "Vazir", Tahoma, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -100,18 +133,20 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--background);
   color: var(--text);
-  font-family: var(--font-sans);
+  font-family: "Vazirmatn", "Vazir", Tahoma, "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
 }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 ::selection {
-  background-color: rgba(200, 167, 93, 0.35);
-  color: #1a1610;
+  background-color: rgba(110, 31, 42, 0.22);
+  color: #1a1614;
 }
-
-.dark ::selection,
+.dark ::selection {
+  background-color: rgba(196, 90, 106, 0.35);
+  color: #f5f2ed;
+}
 .museum-public ::selection {
   background-color: rgba(200, 167, 93, 0.45);
   color: #f5f2ea;
@@ -194,7 +229,7 @@ body {
   background:
     radial-gradient(ellipse 80% 60% at 10% 20%, color-mix(in srgb, var(--primary-accent) 28%, transparent), transparent 55%),
     radial-gradient(ellipse 60% 50% at 90% 80%, color-mix(in srgb, var(--primary) 35%, transparent), transparent 50%),
-    linear-gradient(135deg, var(--primary-deep) 0%, #2a2418 48%, #1a1610 100%);
+    linear-gradient(135deg, var(--primary-deep) 0%, #5a1822 48%, #43131B 100%);
   color: #faf7f4; box-shadow: var(--shadow-lg);
 }
 .hero-museum::after {
