@@ -39,7 +39,6 @@ import {
   qualityLabel,
   banknoteImageTypeOptions,
 } from "@/lib/banknote-labels";
-import { BanknoteFinance } from "@/components/admin/banknote-finance";
 
 function Field({
   label,
@@ -303,8 +302,6 @@ export default function BanknoteDetailPage({
           )}
         </CardContent>
       </Card>
-
-      <BanknoteFinance banknoteId={banknoteId} canEdit={canUpdate} />
 
       <ConfirmDialog
         open={deleteImageId !== null}
