@@ -34,7 +34,6 @@ import {
   qualityLabel,
   stampImageTypeOptions,
 } from "@/lib/stamp-labels";
-import { StampFinance } from "@/components/admin/stamp-finance";
 
 function Field({
   label,
@@ -275,8 +274,6 @@ export default function StampDetailPage({
           )}
         </CardContent>
       </Card>
-
-      <StampFinance stampId={stampId} canEdit={canUpdate} />
 
       <ConfirmDialog
         open={deleteImageId !== null}
