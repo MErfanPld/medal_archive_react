@@ -11,12 +11,8 @@ import {
   Scale,
   CircleDot,
 } from "lucide-react";
-import {
-  getMedalById,
-  getMedalPurchases,
-  getMedalValuations,
-} from "@/lib/data/medals";
-import { formatNumber, formatDate } from "@/lib/utils";
+import { getMedalById } from "@/lib/data/medals";
+import { formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,18 +41,6 @@ export default function MedalDetailPage({
     queryKey: ["medal", medalId],
     queryFn: () => getMedalById(medalId),
     enabled: !Number.isNaN(medalId),
-  });
-
-  const { data: purchases } = useQuery({
-    queryKey: ["medal-purchases", medalId],
-    queryFn: () => getMedalPurchases(medalId),
-    enabled: !!medal,
-  });
-
-  const { data: valuations } = useQuery({
-    queryKey: ["medal-valuations", medalId],
-    queryFn: () => getMedalValuations(medalId),
-    enabled: !!medal,
   });
 
   if (isLoading) {
@@ -213,48 +197,6 @@ export default function MedalDetailPage({
       </div>
 
       <MedalMedia medalId={medalId} canEdit={canUpdate} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>سوابق خرید</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!purchases?.length ? (
-              <p className="text-sm text-text-muted">سابقه‌ای نیست.</p>
-            ) : (
-              <ul className="divide-y divide-border text-sm">
-                {purchases.map((p) => (
-                  <li key={p.id} className="flex justify-between py-2">
-                    <span>{formatDate(p.purchase_date)} — {p.seller}</span>
-                    <span className="tabular-nums">{p.price ? formatNumber(p.price) : "—"} {p.currency}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>سوابق ارزش‌گذاری</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!valuations?.length ? (
-              <p className="text-sm text-text-muted">سابقه‌ای نیست.</p>
-            ) : (
-              <ul className="divide-y divide-border text-sm">
-                {valuations.map((v) => (
-                  <li key={v.id} className="flex justify-between py-2">
-                    <span>{formatDate(v.valuation_date)} — {v.source}</span>
-                    <span className="tabular-nums">{formatNumber(v.value)} {v.currency}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
