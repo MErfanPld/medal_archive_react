@@ -29,7 +29,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
-import { CoinFinance } from "@/components/admin/coin-finance";
 import { useAuthStore } from "@/stores/auth-store";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -386,8 +385,6 @@ export default function CoinDetailPage({
           )}
         </CardContent>
       </Card>
-
-      <CoinFinance coinId={coinId} canEdit={canUpdate} />
 
       <ConfirmDialog
         open={deleteImageId != null}
