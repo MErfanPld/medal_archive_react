@@ -82,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
+        // Restore middleware cookie if session was persisted
         if (state?.accessToken) {
           setAuthCookie(true);
         }
@@ -97,6 +98,11 @@ if (typeof window !== "undefined") {
   );
 }
 
+/**
+ * Mock auth is OPT-IN only.
+ * Real API is the default. Set NEXT_PUBLIC_USE_MOCK_AUTH=1 to force mock login.
+ * Never enabled in production builds.
+ */
 export const isDevMockAuthEnabled =
   process.env.NODE_ENV === "development" &&
   process.env.NEXT_PUBLIC_USE_MOCK_AUTH === "1";
@@ -143,20 +149,25 @@ function mockLogin(username: string): TokenPairResponse {
 }
 
 /**
- * Production login:
- * 1. POST /api/users/login/ { username, password }
- * 2. Store access + refresh
- * 3. GET /api/users/me/
- * 4. Persist session
+ * Production login flow:
+ * 1. POST /api/users/login/  { username, password }
+ * 2. Store access + refresh tokens
+ * 3. GET /api/users/me/ for authoritative user + roles
+ * 4. Persist session (Zustand + cookie hint for middleware)
  */
 export async function login(username: string, password: string) {
   if (isDevMockAuthEnabled) {
-    if (!password) throw new Error("PASSWORD_REQUIRED");
+    if (!password) {
+      throw new Error("PASSWORD_REQUIRED");
+    }
     const data = mockLogin(username);
-    useAuthStore.getState().setSession(data.access, data.refresh, data.user ?? null);
+    useAuthStore
+      .getState()
+      .setSession(data.access, data.refresh, data.user ?? null);
     return data;
   }
 
+  // Real API — never mock
   const data = await authApi.login({
     username: username.trim(),
     password,
@@ -166,18 +177,23 @@ export async function login(username: string, password: string) {
     throw new Error("پاسخ ورود ناقص است (access token موجود نیست).");
   }
 
+  // Store tokens first so subsequent /me has Authorization header
   useAuthStore.getState().setSession(
     data.access,
     data.refresh ?? "",
     data.user ?? null
   );
 
+  // Authoritative user profile from backend
   try {
     const me = await authApi.me();
     useAuthStore.getState().setUser(me);
     return { ...data, user: me };
   } catch {
-    if (data.user) return data;
+    // If /me fails but login returned user, keep that; otherwise fail
+    if (data.user) {
+      return data;
+    }
     useAuthStore.getState().clearSession();
     throw new Error("ورود موفق بود ولی دریافت اطلاعات کاربر ناموفق بود.");
   }
@@ -191,16 +207,22 @@ export async function logout() {
       !String(accessToken || "").startsWith("dev-mock-") &&
       !isDevMockAuthEnabled
     ) {
+      // POST /api/users/logout/ with { refresh }
       await authApi.logout({ refresh: refreshToken });
     }
   } catch {
-    // ignore
+    // Always clear local session even if network fails
   } finally {
     clearSession();
   }
 }
 
-export async function refreshCurrentUser() {
+/**
+ * Re-fetch current user (GET /api/users/me/).
+ * Used after page refresh and by AuthGuard.
+ */
+export async function refreshCurrentUser(options?: { clearOnError?: boolean }) {
+  const clearOnError = options?.clearOnError ?? false;
   const { accessToken, user, setUser, clearSession } = useAuthStore.getState();
   if (!accessToken) return null;
 
@@ -210,15 +232,32 @@ export async function refreshCurrentUser() {
 
   try {
     const me = await authApi.me();
-    setUser(me);
+    const normalized = {
+      ...me,
+      first_name:
+        me.first_name ??
+        (me as { firstName?: string }).firstName ??
+        "",
+      last_name:
+        me.last_name ??
+        (me as { lastName?: string }).lastName ??
+        "",
+      email: me.email ?? null,
+    };
+    setUser(normalized);
     setAuthCookie(true);
-    return me;
+    return normalized;
   } catch {
-    clearSession();
-    return null;
+    if (clearOnError) {
+      clearSession();
+      return null;
+    }
+    // Keep existing session user so settings/profile fields stay filled
+    return user;
   }
 }
 
+/** Demo accounts — only when mock auth is explicitly enabled. */
 export function getDevMockAccounts() {
   if (!isDevMockAuthEnabled) return [];
   return [
