@@ -7,14 +7,31 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, UserPlus, Link2, Copy, Check, KeyRound } from "lucide-react";
+import {
+  ArrowRight,
+  UserPlus,
+  Link2,
+  Copy,
+  Check,
+  KeyRound,
+  Eye,
+  EyeOff,
+  PartyPopper,
+  ShieldCheck,
+} from "lucide-react";
 import { createUser, getAllRoles } from "@/lib/data/users";
 import { invitesApi } from "@/lib/api/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth-store";
@@ -74,6 +91,7 @@ export default function NewUserPage() {
     useState<InviteLinkCreateResponse | null>(null);
   const [createdUser, setCreatedUser] = useState<User | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: allRoles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ["roles", "all"],
@@ -203,47 +221,84 @@ export default function NewUserPage() {
   if (inviteResult) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
-        <Card className="border-emerald-200 bg-emerald-50/40 dark:border-emerald-900 dark:bg-emerald-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
-              <Check className="size-5" />
-              لینک ورود یک‌بارمصرف آماده است
-            </CardTitle>
-            <CardDescription>
-              این لینک را برای کاربر بفرستید. پس از باز کردن، دعوت مصرف می‌شود و وارد سامانه می‌شود.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="bg-primary px-6 py-8 text-center text-white">
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-white/15 ring-4 ring-white/20">
+              <ShieldCheck className="size-8" />
+            </div>
+            <h2 className="text-xl font-bold">لینک دعوت آماده شد</h2>
+            <p className="mt-2 text-sm text-white/85">
+              لینک را برای کاربر بفرستید؛ با باز کردن آن وارد سامانه می‌شود.
+            </p>
+          </div>
+          <div className="space-y-5 p-6">
             {inviteResult.user && (
-              <p className="text-sm text-text-muted">
-                کاربر:{" "}
-                <span className="font-medium text-text" dir="ltr">
+              <div className="rounded-xl border border-border bg-surface-muted/50 px-4 py-3">
+                <p className="text-xs text-text-muted">نام کاربری</p>
+                <p className="mt-0.5 font-mono text-base font-semibold text-text" dir="ltr">
                   {inviteResult.user.username}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-text-muted">لینک دعوت</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  readOnly
+                  value={displayInviteUrl}
+                  dir="ltr"
+                  className="font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={copyLink}
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="size-4" />
+                      کپی شد
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-4" />
+                      کپی لینک
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            {inviteResult.expires_at && (
+              <p className="text-sm text-text-muted">
+                انقضا:{" "}
+                <span className="font-medium text-text">
+                  {new Date(inviteResult.expires_at).toLocaleString("fa-IR")}
                 </span>
               </p>
             )}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input readOnly value={displayInviteUrl} dir="ltr" className="font-mono text-xs" />
-              <Button type="button" variant="secondary" onClick={copyLink} className="shrink-0">
-                {copied ? (<><Check className="size-4" />کپی شد</>) : (<><Copy className="size-4" />کپی لینک</>)}
-              </Button>
-            </div>
-            {inviteResult.expires_at && (
-              <p className="text-meta">
-                انقضا: {new Date(inviteResult.expires_at).toLocaleString("fa-IR")}
-              </p>
-            )}
             {inviteResult.warning && (
-              <Alert variant="warning" title="هشدار سرور">{inviteResult.warning}</Alert>
+              <Alert variant="warning" title="هشدار سرور">
+                {inviteResult.warning}
+              </Alert>
             )}
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={resetAll}>کاربر دیگر</Button>
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <Button variant="outline" size="sm" onClick={resetAll}>
+                کاربر دیگر
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/admin/users">لیست کاربران</Link>
               </Button>
+              {inviteResult.user?.id && (
+                <Button size="sm" asChild>
+                  <Link href={`/admin/users/${inviteResult.user.id}`}>
+                    مشاهده کاربر
+                  </Link>
+                </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -251,74 +306,147 @@ export default function NewUserPage() {
   if (createdUser) {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
-        <Card className="border-emerald-200 bg-emerald-50/40 dark:border-emerald-900 dark:bg-emerald-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
-              <Check className="size-5" />
-              کاربر ایجاد شد
-            </CardTitle>
-            <CardDescription>
-              حساب <span dir="ltr">{createdUser.username}</span> با موفقیت ساخته شد.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button asChild>
-              <Link href={`/admin/users/${createdUser.id}`}>مشاهده کاربر</Link>
-            </Button>
-            <Button variant="outline" onClick={resetAll}>کاربر دیگر</Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/users">لیست کاربران</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="bg-primary px-6 py-8 text-center text-white">
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-white/15 ring-4 ring-white/20">
+              <PartyPopper className="size-8" />
+            </div>
+            <h2 className="text-xl font-bold">کاربر با موفقیت ساخته شد</h2>
+            <p className="mt-2 text-sm text-white/85">
+              حساب فعال است و می‌تواند همین حالا وارد پنل شود.
+            </p>
+          </div>
+          <div className="space-y-4 p-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border bg-surface-muted/50 px-4 py-3">
+                <p className="text-xs text-text-muted">نام کاربری</p>
+                <p className="mt-0.5 font-mono text-base font-semibold text-text" dir="ltr">
+                  {createdUser.username}
+                </p>
+              </div>
+              {createdUser.email && (
+                <div className="rounded-xl border border-border bg-surface-muted/50 px-4 py-3">
+                  <p className="text-xs text-text-muted">ایمیل</p>
+                  <p className="mt-0.5 text-base font-medium text-text" dir="ltr">
+                    {createdUser.email}
+                  </p>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-text-muted">
+              ورود از صفحه{" "}
+              <Link href="/login" className="font-medium text-primary underline-offset-2 hover:underline">
+                ورود به سامانه
+              </Link>
+            </p>
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <Button size="sm" asChild>
+                <Link href={`/admin/users/${createdUser.id}`}>
+                  مدیریت نقش‌ها
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={resetAll}>
+                کاربر دیگر
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/admin/users">لیست کاربران</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link
-            href="/admin/users"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
-          >
-            <ArrowRight className="size-4" />
-            بازگشت به لیست
-          </Link>
-          <h1 className="text-xl font-semibold text-text">افزودن کاربر</h1>
-          <p className="mt-1 text-sm text-text-muted">
-            ساخت حساب مستقیم یا لینک دعوت یک‌بارمصرف
-          </p>
-        </div>
+      <div>
+        <Link
+          href="/admin/users"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
+        >
+          <ArrowRight className="size-4" />
+          بازگشت به کاربران
+        </Link>
+        <h1 className="text-page-title flex items-center gap-2">
+          <UserPlus className="size-5 text-primary" />
+          افزودن کاربر
+        </h1>
+        <p className="mt-1 text-caption">
+          ساخت حساب مستقیم یا ارسال لینک دعوت یک‌بارمصرف برای ورود
+        </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-surface p-1">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
           type="button"
-          className={cn(
-            "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition",
-            mode === "invite"
-              ? "bg-primary text-primary-foreground"
-              : "text-text-muted hover:bg-surface-muted"
-          )}
           onClick={() => setMode("invite")}
+          className={cn(
+            "flex items-start gap-3 rounded-xl border p-4 text-right transition-all",
+            mode === "invite"
+              ? "border-primary bg-primary text-white shadow-sm"
+              : "border-border bg-surface text-text hover:bg-surface-muted"
+          )}
         >
-          <Link2 className="size-4" />
-          لینک دعوت
+          <Link2
+            className={cn(
+              "mt-0.5 size-5 shrink-0",
+              mode === "invite" ? "text-white" : "text-primary"
+            )}
+          />
+          <div>
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                mode === "invite" ? "text-white" : "text-text"
+              )}
+            >
+              لینک دعوت ورود
+            </p>
+            <p
+              className={cn(
+                "mt-0.5 text-xs",
+                mode === "invite" ? "text-white/80" : "text-text-muted"
+              )}
+            >
+              لینک یک‌بارمصرف برای ورود کاربر
+            </p>
+          </div>
         </button>
         <button
           type="button"
-          className={cn(
-            "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition",
-            mode === "account"
-              ? "bg-primary text-primary-foreground"
-              : "text-text-muted hover:bg-surface-muted"
-          )}
           onClick={() => setMode("account")}
+          className={cn(
+            "flex items-start gap-3 rounded-xl border p-4 text-right transition-all",
+            mode === "account"
+              ? "border-primary bg-primary text-white shadow-sm"
+              : "border-border bg-surface text-text hover:bg-surface-muted"
+          )}
         >
-          <UserPlus className="size-4" />
-          حساب مستقیم
+          <KeyRound
+            className={cn(
+              "mt-0.5 size-5 shrink-0",
+              mode === "account" ? "text-white" : "text-primary"
+            )}
+          />
+          <div>
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                mode === "account" ? "text-white" : "text-text"
+              )}
+            >
+              حساب با رمز عبور
+            </p>
+            <p
+              className={cn(
+                "mt-0.5 text-xs",
+                mode === "account" ? "text-white/80" : "text-text-muted"
+              )}
+            >
+              ساخت حساب و ورود مستقیم از صفحه ورود
+            </p>
+          </div>
         </button>
       </div>
 
@@ -355,29 +483,59 @@ export default function NewUserPage() {
               <Label htmlFor="password">
                 {mode === "invite" ? "رمز موقت" : "رمز عبور"}
               </Label>
-              <Input
-                id="password"
-                type="password"
-                dir="ltr"
-                className="mt-1.5"
-                autoComplete="new-password"
-                disabled={pending}
-                {...register("password")}
-                error={errors.password?.message}
-              />
+              <div className="relative mt-1.5">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  dir="ltr"
+                  className="pe-10"
+                  autoComplete="new-password"
+                  disabled={pending}
+                  {...register("password")}
+                  error={errors.password?.message}
+                />
+                <button
+                  type="button"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-subtle hover:bg-surface-muted hover:text-text"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "مخفی کردن رمز" : "نمایش رمز"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="password_confirm">تأیید رمز عبور</Label>
-              <Input
-                id="password_confirm"
-                type="password"
-                dir="ltr"
-                className="mt-1.5"
-                autoComplete="new-password"
-                disabled={pending}
-                {...register("password_confirm")}
-                error={errors.password_confirm?.message}
-              />
+              <div className="relative mt-1.5">
+                <Input
+                  id="password_confirm"
+                  type={showPassword ? "text" : "password"}
+                  dir="ltr"
+                  className="pe-10"
+                  autoComplete="new-password"
+                  disabled={pending}
+                  {...register("password_confirm")}
+                  error={errors.password_confirm?.message}
+                />
+                <button
+                  type="button"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-subtle hover:bg-surface-muted hover:text-text"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "مخفی کردن رمز" : "نمایش رمز"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="email">ایمیل (اختیاری)</Label>
@@ -395,11 +553,21 @@ export default function NewUserPage() {
               <>
                 <div>
                   <Label htmlFor="first_name">نام</Label>
-                  <Input id="first_name" className="mt-1.5" disabled={pending} {...register("first_name")} />
+                  <Input
+                    id="first_name"
+                    className="mt-1.5"
+                    disabled={pending}
+                    {...register("first_name")}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="last_name">نام خانوادگی</Label>
-                  <Input id="last_name" className="mt-1.5" disabled={pending} {...register("last_name")} />
+                  <Input
+                    id="last_name"
+                    className="mt-1.5"
+                    disabled={pending}
+                    {...register("last_name")}
+                  />
                 </div>
                 <div className="flex items-center gap-2 sm:col-span-2">
                   <input
@@ -410,28 +578,30 @@ export default function NewUserPage() {
                     disabled={pending}
                     {...register("is_active")}
                   />
-                  <Label htmlFor="is_active" className="font-normal">حساب فعال باشد</Label>
+                  <Label htmlFor="is_active" className="mb-0">
+                    حساب فعال باشد
+                  </Label>
                 </div>
               </>
             )}
             {mode === "invite" && (
               <div className="sm:col-span-2">
-                <Label htmlFor="expires_in_hours">اعتبار لینک</Label>
+                <Label htmlFor="expires">اعتبار لینک دعوت</Label>
                 <Controller
                   name="expires_in_hours"
                   control={control}
                   render={({ field }) => (
                     <Select
-                      id="expires_in_hours"
+                      id="expires"
                       className="mt-1.5"
                       disabled={pending}
                       value={String(field.value)}
                       onChange={(e) => field.onChange(Number(e.target.value))}
-                    >
-                      {EXPIRY_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </Select>
+                      options={EXPIRY_OPTIONS.map((o) => ({
+                        value: o.value,
+                        label: o.label,
+                      }))}
+                    />
                   )}
                 />
               </div>
@@ -441,50 +611,50 @@ export default function NewUserPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <KeyRound className="size-4" />
-              نقش‌ها
-            </CardTitle>
-            <CardDescription>نقش‌های کاربر را انتخاب کنید (اختیاری)</CardDescription>
+            <CardTitle>نقش‌های اولیه</CardTitle>
+            <CardDescription>
+              نقش‌های اولیه برای کاربر جدید (اختیاری)
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {rolesLoading ? (
-              <p className="text-sm text-text-muted">در حال بارگذاری نقش‌ها...</p>
-            ) : allRoles.length === 0 ? (
-              <p className="text-sm text-text-muted">نقشی تعریف نشده است.</p>
-            ) : (
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {allRoles.map((role) => {
-                  const checked = selectedRoles.includes(role.id);
-                  return (
-                    <li key={role.id}>
-                      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface-muted">
-                        <input
-                          type="checkbox"
-                          className="size-4 rounded border-border"
-                          checked={checked}
-                          disabled={pending}
-                          onChange={() => {
-                            setSelectedRoles((prev) =>
-                              checked
-                                ? prev.filter((id) => id !== role.id)
-                                : [...prev, role.id]
-                            );
-                          }}
-                        />
-                        <span>{role.name}</span>
-                        <span className="text-meta" dir="ltr">{role.codename}</span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
+          <CardContent className="space-y-2">
+            {rolesLoading && (
+              <p className="text-sm text-text-muted">در حال دریافت نقش‌ها…</p>
+            )}
+            {allRoles.map((role) => (
+              <label
+                key={role.id}
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-surface-muted"
+              >
+                <input
+                  type="checkbox"
+                  className="size-4 rounded border-border"
+                  disabled={pending}
+                  checked={selectedRoles.includes(role.id)}
+                  onChange={() => {
+                    setSelectedRoles((prev) =>
+                      prev.includes(role.id)
+                        ? prev.filter((id) => id !== role.id)
+                        : [...prev, role.id]
+                    );
+                  }}
+                />
+                <span className="text-sm">{role.name}</span>
+                <span
+                  className="mr-auto font-mono text-xs text-text-subtle"
+                  dir="ltr"
+                >
+                  {role.codename}
+                </span>
+              </label>
+            ))}
+            {!rolesLoading && allRoles.length === 0 && (
+              <p className="text-sm text-text-muted">نقشی از سرور دریافت نشد.</p>
             )}
           </CardContent>
         </Card>
 
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="outline" asChild disabled={pending}>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" asChild disabled={pending}>
             <Link href="/admin/users">انصراف</Link>
           </Button>
           <Button type="submit" loading={pending} disabled={pending}>
