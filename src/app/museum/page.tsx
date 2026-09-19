@@ -136,7 +136,7 @@ export default function MuseumHomePage() {
   const [q, setQ] = useState("");
   const [country, setCountry] = useState("");
   const [year, setYear] = useState("");
-  const [searchDomain, setSearchDomain] = useState("medals");
+  const [searchDomain, setSearchDomain] = useState("all");
   const sliderRef = useRef<HTMLDivElement>(null);
   const enabled = isHydrated;
 
@@ -237,8 +237,15 @@ export default function MuseumHomePage() {
     const parts = [q, country, year].map((x) => x.trim()).filter(Boolean);
     const params = new URLSearchParams();
     if (parts.length) params.set("q", parts.join(" "));
-    const domain = DOMAINS.find((d) => d.key === searchDomain) ?? DOMAINS[0];
     const qs = params.toString();
+
+    // همه دسته‌ها → صفحه جستجوی یکپارچه
+    if (searchDomain === "all") {
+      router.push(qs ? `/museum/search?${qs}` : "/museum/search");
+      return;
+    }
+
+    const domain = DOMAINS.find((d) => d.key === searchDomain) ?? DOMAINS[0];
     router.push(qs ? `${domain.href}?${qs}` : domain.href);
   };
 
@@ -252,9 +259,9 @@ export default function MuseumHomePage() {
         />
         <div className="mu-hero-overlay" aria-hidden />
         <div className="mu-container relative z-10 pb-16 pt-32 sm:pb-20 sm:pt-40">
-          <p className="mu-label mu-anim-rise">ناصر صلب · آرشیو مدال</p>
+          <p className="mu-label mu-anim-rise">مجموعه آثار ناصر صلب</p>
           <h1 className="museum-serif mu-anim-rise mt-6 max-w-4xl text-5xl font-semibold text-[#F5F2EA] sm:text-6xl lg:text-7xl">
-            آرشیو مدال
+            مجموعه آثار ناصر صلب
           </h1>
           <p className="mu-anim-rise mt-5 max-w-xl text-base leading-8 text-[#A8A8A8] sm:text-lg">
             آرشیو دیجیتال مجموعه‌های تاریخی، مدال‌ها، سکه‌ها و آثار ارزشمند
@@ -332,7 +339,7 @@ export default function MuseumHomePage() {
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <label className="block space-y-2">
                 <span className="text-xs text-[#A8A8A8]">نام اثر</span>
-                <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && goSearch()} placeholder="مثلاً مدال المپیک…" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && goSearch()} placeholder="نام یا واژه کلیدی…" />
               </label>
               <label className="block space-y-2">
                 <span className="text-xs text-[#A8A8A8]">کشور</span>
@@ -345,6 +352,7 @@ export default function MuseumHomePage() {
               <label className="block space-y-2">
                 <span className="text-xs text-[#A8A8A8]">مجموعه</span>
                 <select value={searchDomain} onChange={(e) => setSearchDomain(e.target.value)}>
+                  <option value="all">همه دسته‌بندی‌ها</option>
                   {DOMAINS.map((d) => (
                     <option key={d.key} value={d.key}>{d.title}</option>
                   ))}
