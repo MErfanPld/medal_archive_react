@@ -236,12 +236,13 @@ body {
   pointer-events: none;
 }
 .sidebar-rail {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, var(--primary) 4%) 0%, var(--surface) 40%);
+  /* Solid surface so no white gap when sidebar is shorter than page or while scrolling */
+  background: var(--surface);
   border-inline-start: 1px solid var(--border);
   box-shadow: -4px 0 24px -8px rgb(0 0 0 / 0.06);
 }
 .dark .sidebar-rail {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, var(--primary) 10%) 0%, var(--surface) 50%);
+  background: var(--surface);
 }
 .nav-item {
   position: relative; display: flex; align-items: center; gap: 0.75rem;
