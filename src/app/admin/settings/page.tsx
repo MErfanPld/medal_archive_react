@@ -12,7 +12,7 @@ import {
   type ColorMode,
 } from "@/stores/preferences-store";
 import { usersApi } from "@/lib/api/users";
-import { ApiError } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/api/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,22 +56,6 @@ export default function SettingsPage() {
     if (isHydrated) applyToDocument();
   }, [isHydrated, applyToDocument]);
 
-  useEffect(() => {
-    if (!isAuthHydrated) return;
-    let cancelled = false;
-    (async () => {
-      setLoadingProfile(true);
-      try {
-        await refreshCurrentUser();
-      } finally {
-        if (!cancelled) setLoadingProfile(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthHydrated]);
-
   const {
     register,
     handleSubmit,
@@ -85,14 +69,43 @@ export default function SettingsPage() {
     },
   });
 
+  // Load profile from store + GET /api/users/me/ and fill form fields
   useEffect(() => {
-    if (!user) return;
-    reset({
-      first_name: user.first_name ?? "",
-      last_name: user.last_name ?? "",
-      email: user.email ?? "",
-    });
-  }, [user, reset]);
+    if (!isAuthHydrated) return;
+    let cancelled = false;
+
+    const fillFromUser = (u: typeof user) => {
+      if (!u || cancelled) return;
+      reset({
+        first_name: (u.first_name as string | null | undefined) ?? "",
+        last_name: (u.last_name as string | null | undefined) ?? "",
+        email: (u.email as string | null | undefined) ?? "",
+      });
+    };
+
+    // Immediately fill from persisted session so fields are not empty while loading
+    fillFromUser(useAuthStore.getState().user);
+
+    (async () => {
+      setLoadingProfile(true);
+      try {
+        const me = await refreshCurrentUser();
+        if (!cancelled && me) {
+          fillFromUser(me);
+        } else if (!cancelled) {
+          fillFromUser(useAuthStore.getState().user);
+        }
+      } catch {
+        if (!cancelled) fillFromUser(useAuthStore.getState().user);
+      } finally {
+        if (!cancelled) setLoadingProfile(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthHydrated, reset]);
 
   const onSaveProfile = handleSubmit(async (values) => {
     if (!user?.id) {
@@ -123,18 +136,15 @@ export default function SettingsPage() {
         email: values.email.trim(),
       });
     } catch (err) {
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : "خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.";
-      toast.error(msg);
+      toast.error(
+        getErrorMessage(err, "خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.")
+      );
     } finally {
       setSaving(false);
     }
   });
 
-  const rolesLabel =
-    user?.roles?.map((r) => r.name).join("، ") || "—";
+  const rolesLabel = user?.roles?.map((r) => r.name).join("، ") || "—";
 
   const initials =
     [user?.first_name?.[0], user?.last_name?.[0]]
@@ -166,7 +176,11 @@ export default function SettingsPage() {
         <CardContent className="space-y-8">
           <fieldset>
             <legend className="mb-3 text-sm font-medium text-text">رنگ تم</legend>
-            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="رنگ تم">
+            <div
+              className="flex flex-wrap gap-3"
+              role="radiogroup"
+              aria-label="رنگ تم"
+            >
               {ACCENT_PRESETS.map((p) => {
                 const selected = accentId === p.id;
                 return (
@@ -197,16 +211,30 @@ export default function SettingsPage() {
           </fieldset>
 
           <div>
-            <Label id="font-scale-label" className="mb-3 block">اندازه فونت</Label>
-            <div className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1" role="group" aria-labelledby="font-scale-label">
-              {([{ id: "sm", label: "کوچک" }, { id: "md", label: "متوسط" }, { id: "lg", label: "بزرگ" }] as const).map((opt) => (
+            <Label id="font-scale-label" className="mb-3 block">
+              اندازه فونت
+            </Label>
+            <div
+              className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1"
+              role="group"
+              aria-labelledby="font-scale-label"
+            >
+              {(
+                [
+                  { id: "sm", label: "کوچک" },
+                  { id: "md", label: "متوسط" },
+                  { id: "lg", label: "بزرگ" },
+                ] as const
+              ).map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setFontScale(opt.id as FontScale)}
                   className={cn(
                     "rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                    fontScale === opt.id ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
+                    fontScale === opt.id
+                      ? "bg-surface text-text shadow-sm"
+                      : "text-text-muted hover:text-text"
                   )}
                   aria-pressed={fontScale === opt.id}
                 >
@@ -217,16 +245,30 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <Label id="color-mode-label" className="mb-3 block">حالت نمایش</Label>
-            <div className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1" role="group" aria-labelledby="color-mode-label">
-              {([{ id: "light", label: "روشن" }, { id: "dark", label: "تیره" }, { id: "system", label: "سیستم" }] as const).map((opt) => (
+            <Label id="color-mode-label" className="mb-3 block">
+              حالت نمایش
+            </Label>
+            <div
+              className="inline-flex rounded-lg border border-border bg-surface-muted/50 p-1"
+              role="group"
+              aria-labelledby="color-mode-label"
+            >
+              {(
+                [
+                  { id: "light", label: "روشن" },
+                  { id: "dark", label: "تیره" },
+                  { id: "system", label: "سیستم" },
+                ] as const
+              ).map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setColorMode(opt.id as ColorMode)}
                   className={cn(
                     "rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                    colorMode === opt.id ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
+                    colorMode === opt.id
+                      ? "bg-surface text-text shadow-sm"
+                      : "text-text-muted hover:text-text"
                   )}
                   aria-pressed={colorMode === opt.id}
                 >
@@ -249,16 +291,23 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loadingProfile && !user ? (
+          {!user && loadingProfile ? (
             <div className="space-y-4">
               <Skeleton className="h-16 w-16 rounded-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
+          ) : !user ? (
+            <p className="text-sm text-text-muted">
+              اطلاعات کاربر در دسترس نیست. لطفاً دوباره وارد شوید.
+            </p>
           ) : (
             <form onSubmit={onSaveProfile} className="space-y-6">
               <div className="flex items-center gap-4">
-                <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-lg font-semibold text-primary" aria-hidden>
+                <div
+                  className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-lg font-semibold text-primary"
+                  aria-hidden
+                >
                   {initials}
                 </div>
                 <div>
@@ -274,14 +323,21 @@ export default function SettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label>نام کاربری</Label>
-                  <Input value={user?.username ?? ""} disabled dir="ltr" className="mt-1.5" />
+                  <Input
+                    value={user?.username ?? ""}
+                    disabled
+                    dir="ltr"
+                    className="mt-1.5"
+                  />
                 </div>
                 <div>
                   <Label>نقش</Label>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {user?.roles?.length ? (
                       user.roles.map((r) => (
-                        <Badge key={r.id} variant="primary">{r.name}</Badge>
+                        <Badge key={r.id} variant="primary">
+                          {r.name}
+                        </Badge>
                       ))
                     ) : (
                       <span className="text-sm text-text-muted">{rolesLabel}</span>
@@ -290,21 +346,44 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <Label htmlFor="first_name">نام</Label>
-                  <Input id="first_name" className="mt-1.5" autoComplete="given-name" {...register("first_name")} />
+                  <Input
+                    id="first_name"
+                    className="mt-1.5"
+                    autoComplete="given-name"
+                    {...register("first_name")}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="last_name">نام خانوادگی</Label>
-                  <Input id="last_name" className="mt-1.5" autoComplete="family-name" {...register("last_name")} />
+                  <Input
+                    id="last_name"
+                    className="mt-1.5"
+                    autoComplete="family-name"
+                    {...register("last_name")}
+                  />
                 </div>
                 <div className="sm:col-span-2">
                   <Label htmlFor="email">ایمیل</Label>
-                  <Input id="email" type="email" dir="ltr" className="mt-1.5" autoComplete="email" {...register("email")} />
+                  <Input
+                    id="email"
+                    type="email"
+                    dir="ltr"
+                    className="mt-1.5"
+                    autoComplete="email"
+                    {...register("email")}
+                  />
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
-                {isDirty && <span className="text-xs text-text-muted">تغییرات ذخیره نشده</span>}
-                <Button type="submit" loading={saving} disabled={saving || !isDirty || !user}>
+                {isDirty && (
+                  <span className="text-xs text-text-muted">تغییرات ذخیره نشده</span>
+                )}
+                <Button
+                  type="submit"
+                  loading={saving}
+                  disabled={saving || !isDirty || !user}
+                >
                   ذخیره تغییرات
                 </Button>
               </div>
