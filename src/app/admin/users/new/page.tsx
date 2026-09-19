@@ -189,15 +189,34 @@ export default function NewUserPage() {
       })
     : "";
 
-  const copyLink = async () => {
-    if (!displayInviteUrl) return;
+  const copyText = async (text: string) => {
+    if (!text) {
+      toast.error("لینکی برای کپی وجود ندارد");
+      return false;
+    }
     try {
-      await navigator.clipboard.writeText(displayInviteUrl);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (!ok) throw new Error("execCommand failed");
+      }
       setCopied(true);
       toast.success("لینک کپی شد");
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2500);
+      return true;
     } catch {
-      toast.error("کپی ناموفق بود");
+      toast.error("کپی انجام نشد. لینک را دستی انتخاب و کپی کنید.");
+      return false;
     }
   };
 
@@ -206,6 +225,7 @@ export default function NewUserPage() {
     setCreatedUser(null);
     setFormError(null);
     setSelectedRoles([]);
+    setCopied(false);
     reset({
       username: "",
       password: "",
@@ -219,6 +239,12 @@ export default function NewUserPage() {
   };
 
   if (inviteResult) {
+    const linkText =
+      displayInviteUrl ||
+      (inviteResult.token
+        ? `${typeof window !== "undefined" ? window.location.origin : ""}/invite/${inviteResult.token}`
+        : "");
+
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
@@ -228,32 +254,61 @@ export default function NewUserPage() {
             </div>
             <h2 className="text-xl font-bold">لینک دعوت آماده شد</h2>
             <p className="mt-2 text-sm text-white/85">
-              لینک را برای کاربر بفرستید؛ با باز کردن آن وارد سامانه می‌شود.
+              این لینک را برای کاربر بفرستید. با باز کردن آن وارد سامانه می‌شود.
             </p>
           </div>
+
           <div className="space-y-5 p-6">
-            {inviteResult.user && (
-              <div className="rounded-xl border border-border bg-surface-muted/50 px-4 py-3">
-                <p className="text-xs text-text-muted">نام کاربری</p>
-                <p className="mt-0.5 font-mono text-base font-semibold text-text" dir="ltr">
-                  {inviteResult.user.username}
-                </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {inviteResult.user?.username && (
+                <div className="rounded-xl border border-border bg-surface-muted/50 px-4 py-3">
+                  <p className="text-xs text-text-muted">نام کاربری</p>
+                  <p className="mt-0.5 font-mono text-base font-semibold text-text" dir="ltr">
+                    {inviteResult.user.username}
+                  </p>
+                </div>
+              )}
+              {inviteResult.expires_at && (
+                <div className="rounded-xl border border-border bg-surface-muted/50 px-4 py-3">
+                  <p className="text-xs text-text-muted">انقضای لینک</p>
+                  <p className="mt-0.5 text-base font-semibold text-text">
+                    {new Date(inviteResult.expires_at).toLocaleString("fa-IR")}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-text">لینک دعوت یک‌بارمصرف</p>
+                {copied && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                    <Check className="size-3.5" />
+                    کپی شد
+                  </span>
+                )}
               </div>
-            )}
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-text-muted">لینک دعوت</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  readOnly
-                  value={displayInviteUrl}
-                  dir="ltr"
-                  className="font-mono text-xs"
-                />
+              <div
+                className="mb-3 cursor-pointer break-all rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-xs leading-relaxed text-text"
+                dir="ltr"
+                onClick={(e) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(e.currentTarget);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+                }}
+                title="برای انتخاب کلیک کنید"
+              >
+                {linkText || "لینک در دسترس نیست"}
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={copyLink}
-                  className="shrink-0"
+                  onClick={() => copyText(linkText)}
+                  disabled={!linkText}
+                  className="gap-2"
                 >
                   {copied ? (
                     <>
@@ -267,21 +322,25 @@ export default function NewUserPage() {
                     </>
                   )}
                 </Button>
+                {linkText && (
+                  <Button type="button" variant="outline" asChild>
+                    <a href={linkText} target="_blank" rel="noreferrer">
+                      باز کردن لینک
+                    </a>
+                  </Button>
+                )}
               </div>
-            </div>
-            {inviteResult.expires_at && (
-              <p className="text-sm text-text-muted">
-                انقضا:{" "}
-                <span className="font-medium text-text">
-                  {new Date(inviteResult.expires_at).toLocaleString("fa-IR")}
-                </span>
+              <p className="mt-3 text-xs text-text-muted">
+                اگر دکمه کپی کار نکرد، روی لینک کلیک کنید و با Ctrl+C / ⌘+C کپی کنید.
               </p>
-            )}
+            </div>
+
             {inviteResult.warning && (
               <Alert variant="warning" title="هشدار سرور">
                 {inviteResult.warning}
               </Alert>
             )}
+
             <div className="flex flex-wrap gap-2 border-t border-border pt-4">
               <Button variant="outline" size="sm" onClick={resetAll}>
                 کاربر دیگر
@@ -333,17 +392,9 @@ export default function NewUserPage() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-text-muted">
-              ورود از صفحه{" "}
-              <Link href="/login" className="font-medium text-primary underline-offset-2 hover:underline">
-                ورود به سامانه
-              </Link>
-            </p>
             <div className="flex flex-wrap gap-2 border-t border-border pt-4">
               <Button size="sm" asChild>
-                <Link href={`/admin/users/${createdUser.id}`}>
-                  مدیریت نقش‌ها
-                </Link>
+                <Link href={`/admin/users/${createdUser.id}`}>مدیریت نقش‌ها</Link>
               </Button>
               <Button variant="outline" size="sm" onClick={resetAll}>
                 کاربر دیگر
@@ -373,7 +424,7 @@ export default function NewUserPage() {
           افزودن کاربر
         </h1>
         <p className="mt-1 text-caption">
-          ساخت حساب مستقیم یا ارسال لینک دعوت یک‌بارمصرف برای ورود
+          ساخت حساب مستقیم یا ارسال لینک دعوت یک‌بارمصرف
         </p>
       </div>
 
@@ -388,27 +439,12 @@ export default function NewUserPage() {
               : "border-border bg-surface text-text hover:bg-surface-muted"
           )}
         >
-          <Link2
-            className={cn(
-              "mt-0.5 size-5 shrink-0",
-              mode === "invite" ? "text-white" : "text-primary"
-            )}
-          />
+          <Link2 className={cn("mt-0.5 size-5 shrink-0", mode === "invite" ? "text-white" : "text-primary")} />
           <div>
-            <p
-              className={cn(
-                "text-sm font-semibold",
-                mode === "invite" ? "text-white" : "text-text"
-              )}
-            >
+            <p className={cn("text-sm font-semibold", mode === "invite" ? "text-white" : "text-text")}>
               لینک دعوت ورود
             </p>
-            <p
-              className={cn(
-                "mt-0.5 text-xs",
-                mode === "invite" ? "text-white/80" : "text-text-muted"
-              )}
-            >
+            <p className={cn("mt-0.5 text-xs", mode === "invite" ? "text-white/80" : "text-text-muted")}>
               لینک یک‌بارمصرف برای ورود کاربر
             </p>
           </div>
@@ -423,37 +459,20 @@ export default function NewUserPage() {
               : "border-border bg-surface text-text hover:bg-surface-muted"
           )}
         >
-          <KeyRound
-            className={cn(
-              "mt-0.5 size-5 shrink-0",
-              mode === "account" ? "text-white" : "text-primary"
-            )}
-          />
+          <KeyRound className={cn("mt-0.5 size-5 shrink-0", mode === "account" ? "text-white" : "text-primary")} />
           <div>
-            <p
-              className={cn(
-                "text-sm font-semibold",
-                mode === "account" ? "text-white" : "text-text"
-              )}
-            >
+            <p className={cn("text-sm font-semibold", mode === "account" ? "text-white" : "text-text")}>
               حساب با رمز عبور
             </p>
-            <p
-              className={cn(
-                "mt-0.5 text-xs",
-                mode === "account" ? "text-white/80" : "text-text-muted"
-              )}
-            >
-              ساخت حساب و ورود مستقیم از صفحه ورود
+            <p className={cn("mt-0.5 text-xs", mode === "account" ? "text-white/80" : "text-text-muted")}>
+              ساخت حساب و ورود مستقیم
             </p>
           </div>
         </button>
       </div>
 
       {formError && (
-        <Alert variant="danger" title="خطا">
-          {formError}
-        </Alert>
+        <Alert variant="danger" title="خطا">{formError}</Alert>
       )}
 
       <form onSubmit={onSubmit} className="space-y-6" noValidate>
@@ -463,49 +482,33 @@ export default function NewUserPage() {
             <CardDescription>
               {mode === "invite"
                 ? "کاربر با مصرف لینک فعال می‌شود."
-                : "کاربر بلافاصله با همین رمز می‌تواند وارد شود."}
+                : "کاربر بلافاصله با همین رمز وارد می‌شود."}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="username">نام کاربری</Label>
-              <Input
-                id="username"
-                dir="ltr"
-                className="mt-1.5"
-                autoComplete="off"
-                disabled={pending}
-                {...register("username")}
-                error={errors.username?.message}
-              />
+              <Input id="username" dir="ltr" className="mt-1.5" disabled={pending} {...register("username")} error={errors.username?.message} />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="password">
-                {mode === "invite" ? "رمز موقت" : "رمز عبور"}
-              </Label>
+              <Label htmlFor="password">{mode === "invite" ? "رمز موقت" : "رمز عبور"}</Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   dir="ltr"
                   className="pe-10"
-                  autoComplete="new-password"
                   disabled={pending}
                   {...register("password")}
                   error={errors.password?.message}
                 />
                 <button
                   type="button"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-subtle hover:bg-surface-muted hover:text-text"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-subtle hover:bg-surface-muted"
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={-1}
-                  aria-label={showPassword ? "مخفی کردن رمز" : "نمایش رمز"}
                 >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>
@@ -517,70 +520,33 @@ export default function NewUserPage() {
                   type={showPassword ? "text" : "password"}
                   dir="ltr"
                   className="pe-10"
-                  autoComplete="new-password"
                   disabled={pending}
                   {...register("password_confirm")}
                   error={errors.password_confirm?.message}
                 />
                 <button
                   type="button"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-subtle hover:bg-surface-muted hover:text-text"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-subtle hover:bg-surface-muted"
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={-1}
-                  aria-label={showPassword ? "مخفی کردن رمز" : "نمایش رمز"}
                 >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="email">ایمیل (اختیاری)</Label>
-              <Input
-                id="email"
-                type="email"
-                dir="ltr"
-                className="mt-1.5"
-                disabled={pending}
-                {...register("email")}
-                error={errors.email?.message}
-              />
+              <Input id="email" type="email" dir="ltr" className="mt-1.5" disabled={pending} {...register("email")} error={errors.email?.message} />
             </div>
             {mode === "account" && (
               <>
                 <div>
                   <Label htmlFor="first_name">نام</Label>
-                  <Input
-                    id="first_name"
-                    className="mt-1.5"
-                    disabled={pending}
-                    {...register("first_name")}
-                  />
+                  <Input id="first_name" className="mt-1.5" disabled={pending} {...register("first_name")} />
                 </div>
                 <div>
                   <Label htmlFor="last_name">نام خانوادگی</Label>
-                  <Input
-                    id="last_name"
-                    className="mt-1.5"
-                    disabled={pending}
-                    {...register("last_name")}
-                  />
-                </div>
-                <div className="flex items-center gap-2 sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    className="size-4 rounded border-border"
-                    defaultChecked
-                    disabled={pending}
-                    {...register("is_active")}
-                  />
-                  <Label htmlFor="is_active" className="mb-0">
-                    حساب فعال باشد
-                  </Label>
+                  <Input id="last_name" className="mt-1.5" disabled={pending} {...register("last_name")} />
                 </div>
               </>
             )}
@@ -597,10 +563,7 @@ export default function NewUserPage() {
                       disabled={pending}
                       value={String(field.value)}
                       onChange={(e) => field.onChange(Number(e.target.value))}
-                      options={EXPIRY_OPTIONS.map((o) => ({
-                        value: o.value,
-                        label: o.label,
-                      }))}
+                      options={EXPIRY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                     />
                   )}
                 />
@@ -612,19 +575,11 @@ export default function NewUserPage() {
         <Card>
           <CardHeader>
             <CardTitle>نقش‌های اولیه</CardTitle>
-            <CardDescription>
-              نقش‌های اولیه برای کاربر جدید (اختیاری)
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {rolesLoading && (
-              <p className="text-sm text-text-muted">در حال دریافت نقش‌ها…</p>
-            )}
+            {rolesLoading && <p className="text-sm text-text-muted">در حال دریافت نقش‌ها…</p>}
             {allRoles.map((role) => (
-              <label
-                key={role.id}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-surface-muted"
-              >
+              <label key={role.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-surface-muted">
                 <input
                   type="checkbox"
                   className="size-4 rounded border-border"
@@ -632,24 +587,13 @@ export default function NewUserPage() {
                   checked={selectedRoles.includes(role.id)}
                   onChange={() => {
                     setSelectedRoles((prev) =>
-                      prev.includes(role.id)
-                        ? prev.filter((id) => id !== role.id)
-                        : [...prev, role.id]
+                      prev.includes(role.id) ? prev.filter((id) => id !== role.id) : [...prev, role.id]
                     );
                   }}
                 />
                 <span className="text-sm">{role.name}</span>
-                <span
-                  className="mr-auto font-mono text-xs text-text-subtle"
-                  dir="ltr"
-                >
-                  {role.codename}
-                </span>
               </label>
             ))}
-            {!rolesLoading && allRoles.length === 0 && (
-              <p className="text-sm text-text-muted">نقشی از سرور دریافت نشد.</p>
-            )}
           </CardContent>
         </Card>
 
