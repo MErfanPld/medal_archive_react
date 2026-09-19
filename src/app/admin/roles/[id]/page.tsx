@@ -11,7 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useAuthStore } from "@/stores/auth-store";
-import { PERMISSIONS } from "@/lib/permissions";
+import {
+  PERMISSIONS,
+  getPermissionGroupLabel,
+  getPermissionLabel,
+  getPermissionGroupKey,
+} from "@/lib/permissions";
 
 export default function RoleDetailPage() {
   const params = useParams();
@@ -45,19 +50,11 @@ export default function RoleDetailPage() {
   const grouped = (role.permissions ?? []).reduce<
     Record<string, typeof role.permissions>
   >((acc, p) => {
-    const group = p.codename.split(".")[0] || "other";
+    const group = getPermissionGroupKey(p.codename, p.name);
     if (!acc[group]) acc[group] = [];
     acc[group].push(p);
     return acc;
   }, {});
-
-  const groupLabels: Record<string, string> = {
-    categories: "دسته‌بندی‌ها",
-    medals: "مدال‌ها",
-    reports: "گزارش‌ها",
-    users: "کاربران",
-    roles: "نقش‌ها",
-  };
 
   return (
     <div className="space-y-6">
@@ -76,9 +73,6 @@ export default function RoleDetailPage() {
               {role.is_active ? "فعال" : "غیرفعال"}
             </Badge>
           </div>
-          <p className="mt-1 font-mono text-sm text-text-subtle">
-            {role.codename}
-          </p>
           {role.description && (
             <p className="mt-2 text-sm text-text-muted">{role.description}</p>
           )}
@@ -96,22 +90,22 @@ export default function RoleDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            مجوزهای تخصیص‌یافته ({role.permissions?.length ?? 0})
+            دسترسی‌ها ({role.permissions?.length ?? 0})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.keys(grouped).length === 0 ? (
-            <p className="text-sm text-text-muted">مجوزی تخصیص داده نشده است.</p>
+            <p className="text-sm text-text-muted">دسترسی‌ای تخصیص داده نشده است.</p>
           ) : (
             Object.entries(grouped).map(([group, perms]) => (
               <div key={group}>
                 <h3 className="mb-2 text-sm font-semibold text-text">
-                  {groupLabels[group] || group}
+                  {getPermissionGroupLabel(group)}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {perms.map((p) => (
                     <Badge key={p.id} variant="primary">
-                      {p.name}
+                      {getPermissionLabel(p.codename, p.name)}
                     </Badge>
                   ))}
                 </div>
