@@ -2,10 +2,35 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, ArrowLeft } from "lucide-react";
+import {
+  Search,
+  X,
+  ArrowLeft,
+  Award,
+  Coins,
+  Banknote,
+  Package,
+  Sword,
+  Gem,
+  Hexagon,
+  Stamp,
+  CircleDot,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const POPULAR = ["ایران", "المپیک", "نقره", "نظامی", "یادبود", "سکه"];
+
+const CATEGORIES = [
+  { href: "/museum/medals", label: "مدال‌ها", Icon: Award },
+  { href: "/museum/coins", label: "سکه و پول", Icon: Coins },
+  { href: "/museum/banknotes", label: "اسکناس", Icon: Banknote },
+  { href: "/museum/antiques", label: "آنتیک", Icon: Package },
+  { href: "/museum/knives", label: "چاقو", Icon: Sword },
+  { href: "/museum/rings", label: "انگشتر", Icon: Gem },
+  { href: "/museum/seals", label: "مهر", Icon: Hexagon },
+  { href: "/museum/stamps", label: "تمبر", Icon: Stamp },
+  { href: "/museum/tasbih", label: "تسبیح", Icon: CircleDot },
+];
 
 interface SearchOverlayProps {
   open: boolean;
@@ -34,14 +59,15 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
   if (!open) return null;
 
+  /** Search across ALL museum categories */
   const go = (term: string) => {
     const value = term.trim();
     onClose();
     if (!value) {
-      router.push("/museum/medals");
+      router.push("/museum/search");
       return;
     }
-    router.push(`/museum/medals?q=${encodeURIComponent(value)}`);
+    router.push(`/museum/search?q=${encodeURIComponent(value)}`);
   };
 
   return (
@@ -51,7 +77,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
       aria-modal="true"
       aria-label="جستجو در آرشیو"
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pt-8 sm:pt-16">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-y-auto px-4 pt-8 sm:pt-16">
         <div className="flex items-center gap-3 border-b border-white/15 pb-4">
           <Search className="size-5 shrink-0 text-white/50" aria-hidden />
           <input
@@ -61,9 +87,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             onKeyDown={(e) => {
               if (e.key === "Enter") go(q);
             }}
-            placeholder="نام، کشور، سال، دوره تاریخی یا نوع اثر…"
+            placeholder="جستجو در همه دسته‌ها: نام، کشور، سال…"
             className="w-full bg-transparent text-lg text-white placeholder:text-white/35 outline-none sm:text-2xl"
-            aria-label="جستجو"
+            aria-label="جستجو در همه دسته‌بندی‌ها"
           />
           <button
             type="button"
@@ -75,7 +101,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           </button>
         </div>
 
-        <div className="mt-10 space-y-8">
+        <div className="mt-10 space-y-10 pb-16">
           <div>
             <p className="museum-label text-white/40">جستجوهای پرتکرار</p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -95,36 +121,44 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                router.push("/museum/medals");
-              }}
-              className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-right transition hover:bg-white/10"
-            >
-              <span>
-                <span className="block text-sm font-medium text-white">گالری مدال‌ها</span>
-                <span className="mt-1 block text-xs text-white/45">آرشیو مدال و نشان</span>
-              </span>
-              <ArrowLeft className="size-4 text-white/40 transition group-hover:-translate-x-1 group-hover:text-white" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                router.push("/museum/coins");
-              }}
-              className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-right transition hover:bg-white/10"
-            >
-              <span>
-                <span className="block text-sm font-medium text-white">گالری سکه و پول</span>
-                <span className="mt-1 block text-xs text-white/45">سکه، اسکناس و توکن</span>
-              </span>
-              <ArrowLeft className="size-4 text-white/40 transition group-hover:-translate-x-1 group-hover:text-white" />
-            </button>
+          <div>
+            <p className="museum-label text-white/40">
+              یا مستقیم یک دسته را باز کنید
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {CATEGORIES.map((cat) => {
+                const Icon = cat.Icon;
+                return (
+                  <button
+                    key={cat.href}
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      router.push(cat.href);
+                    }}
+                    className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-right transition hover:bg-white/10"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Icon className="size-4 text-[#C8A75D]" />
+                      <span className="text-sm font-medium text-white">
+                        {cat.label}
+                      </span>
+                    </span>
+                    <ArrowLeft className="size-4 text-white/40 transition group-hover:-translate-x-1 group-hover:text-white" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => go(q)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#C8A75D]/40 bg-[#C8A75D]/15 px-4 py-3.5 text-sm font-medium text-[#C8A75D] transition hover:bg-[#C8A75D]/25"
+          >
+            <Search className="size-4" />
+            جستجو در همه دسته‌بندی‌ها
+          </button>
         </div>
       </div>
     </div>
