@@ -1,18 +1,6 @@
 /**
  * Centralized frontend authorization helpers.
  * Backend remains the final security authority.
- *
- * Roles from the API (documented):
- * - Superuser / superuser / super_admin → full access
- * - Admin / admin → users, roles, content
- * - Curator / curator → categories + medals
- * - Viewer / viewer → view-only
- *
- * Permission codenames (from OpenAPI / backend):
- * categories.view | categories.create | categories.update | categories.delete
- * medals.view | medals.create | medals.update | medals.delete
- * reports.view
- * + users / ACL related
  */
 
 import type { UserMe, RoleMini } from "@/types/api";
@@ -69,7 +57,6 @@ export const PERMISSIONS = {
 export type PermissionCodename =
   (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
-/** Role codenames that imply full access */
 const FULL_ACCESS_ROLES = new Set([
   "superuser",
   "super_admin",
@@ -77,7 +64,6 @@ const FULL_ACCESS_ROLES = new Set([
   "admin",
 ]);
 
-/** Approximate capability matrix by role (until /me returns full permissions) */
 const ROLE_CAPABILITIES: Record<string, Set<string>> = {
   curator: new Set([
     PERMISSIONS.CATEGORIES_VIEW,
@@ -186,7 +172,6 @@ export function isFullAccess(user: UserMe | null | undefined): boolean {
     is_staff?: boolean;
   };
   if (anyUser.is_superuser) return true;
-
   return getRoleCodes(user).some((c) => FULL_ACCESS_ROLES.has(c));
 }
 
@@ -305,4 +290,135 @@ export function canManageUsers(user: UserMe | null | undefined) {
 }
 export function canViewRoles(user: UserMe | null | undefined) {
   return hasPermission(user, PERMISSIONS.ROLES_VIEW) || isFullAccess(user);
+}
+
+/** Persian labels for permission groups */
+export const PERMISSION_GROUP_LABELS: Record<string, string> = {
+  medals: "مدال‌ها",
+  categories: "دسته‌بندی‌ها",
+  users: "کاربران",
+  roles: "نقش‌ها",
+  reports: "گزارش‌ها",
+  settings: "تنظیمات",
+  permissions: "دسترسی‌ها",
+  coins: "سکه‌ها",
+  banknotes: "اسکناس‌ها",
+  antiques: "آنتیک‌ها",
+  knives: "چاقوها",
+  rings: "انگشترها",
+  seals: "مهرها",
+  stamps: "تمبرها",
+  tasbih: "تسبیح‌ها",
+  auth: "ورود و امنیت",
+  contenttypes: "نوع محتوا",
+  sessions: "نشست‌ها",
+  admin: "مدیریت",
+  other: "سایر",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  view: "مشاهده",
+  add: "افزودن",
+  create: "افزودن",
+  change: "ویرایش",
+  update: "ویرایش",
+  delete: "حذف",
+  manage: "مدیریت",
+};
+
+export function getPermissionGroupKey(
+  codename: string,
+  fallbackName?: string | null
+): string {
+  const candidates = [codename, fallbackName || ""]
+    .map((s) => (s || "").trim().toLowerCase())
+    .filter(Boolean);
+
+  for (const raw of candidates) {
+    if (raw.includes(".")) {
+      return raw.split(".")[0] || "other";
+    }
+
+    const underscored = raw.replace(/\s+/g, "_");
+    const parts = underscored.split("_").filter(Boolean);
+    if (parts.length >= 2 && ACTION_LABELS[parts[0]]) {
+      let resource = parts.slice(1).join("_");
+      if (resource === "medal") resource = "medals";
+      if (resource === "category") resource = "categories";
+      if (resource === "user") resource = "users";
+      if (resource === "role") resource = "roles";
+      if (resource === "report") resource = "reports";
+      if (resource === "setting") resource = "settings";
+      if (resource === "coin") resource = "coins";
+      if (resource === "banknote") resource = "banknotes";
+      if (resource === "antique") resource = "antiques";
+      if (resource === "knife") resource = "knives";
+      if (resource === "ring") resource = "rings";
+      if (resource === "seal") resource = "seals";
+      if (resource === "stamp") resource = "stamps";
+      return resource || "other";
+    }
+  }
+
+  const first = (candidates[0] || "")
+    .replace(/\s+/g, "_")
+    .split("_")
+    .filter(Boolean);
+  return first[0] || "other";
+}
+
+export function getPermissionGroupLabel(groupOrCodename: string): string {
+  const key =
+    groupOrCodename.includes(".") || groupOrCodename.includes("_")
+      ? getPermissionGroupKey(groupOrCodename)
+      : groupOrCodename.toLowerCase();
+  if (PERMISSION_GROUP_LABELS[key]) return PERMISSION_GROUP_LABELS[key];
+
+  const singular = key.endsWith("s") ? key.slice(0, -1) : key;
+  if (PERMISSION_GROUP_LABELS[singular]) return PERMISSION_GROUP_LABELS[singular];
+  if (PERMISSION_GROUP_LABELS[`${singular}s`])
+    return PERMISSION_GROUP_LABELS[`${singular}s`];
+
+  return key;
+}
+
+export function getPermissionActionLabel(
+  codename: string,
+  fallbackName?: string | null
+): string {
+  const raw = (codename || "").trim().toLowerCase();
+  const name = (fallbackName || "").trim().toLowerCase();
+  const source = `${raw} ${name}`.replace(/\s+/g, " ").trim();
+
+  if (raw.includes(".")) {
+    const action = raw.split(".").pop() || "";
+    if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  }
+
+  for (const action of Object.keys(ACTION_LABELS)) {
+    const re = new RegExp(`(^|[\\s._])${action}([\\s._]|$)`);
+    if (re.test(name) || re.test(raw) || source.includes(`can ${action}`)) {
+      return ACTION_LABELS[action];
+    }
+  }
+
+  if (fallbackName && /[\u0600-\u06FF]/.test(fallbackName)) {
+    return fallbackName;
+  }
+
+  return fallbackName?.trim() || "دسترسی";
+}
+
+/** Full simple label: "مشاهده مدال‌ها" */
+export function getPermissionLabel(
+  codename: string,
+  fallbackName?: string | null
+): string {
+  const action = getPermissionActionLabel(codename, fallbackName);
+  const groupKey = getPermissionGroupKey(codename, fallbackName);
+  const group = getPermissionGroupLabel(groupKey);
+  if (group === "سایر" || group === groupKey) {
+    return action;
+  }
+  return `${action} ${group}`;
 }
