@@ -189,7 +189,13 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
+export function AdminSidebar({
+  open,
+  onClose,
+}: {
+  open?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -228,12 +234,16 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-64 flex-col border-l border-border bg-surface transition-transform lg:static lg:translate-x-0",
+          "sidebar-rail fixed inset-y-0 right-0 z-50 flex h-dvh max-h-dvh w-64 flex-col overflow-hidden border-l border-border transition-transform lg:static lg:h-full lg:max-h-none lg:translate-x-0",
           open ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
+        aria-label="منوی اصلی"
       >
-        <div className="flex h-14 items-center justify-between border-b border-border px-4">
-          <Link href="/admin/dashboard" className="flex items-center gap-2.5 min-w-0">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+          <Link
+            href="/admin/dashboard"
+            className="flex min-w-0 items-center gap-2.5"
+          >
             <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -256,7 +266,7 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3">
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
           {NAV_GROUPS.map((group) => {
             const items = group.items.filter((item) => item.visible(user));
             if (!items.length) return null;
@@ -298,7 +308,7 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
           })}
         </nav>
 
-        <div className="relative border-t border-border p-3" ref={menuRef}>
+        <div className="relative shrink-0 border-t border-border p-3" ref={menuRef}>
           <button
             type="button"
             onClick={() => setUserMenuOpen((v) => !v)}
@@ -309,7 +319,9 @@ export function AdminSidebar({ open, onClose }: { open?: boolean; onClose?: () =
             </div>
             <div className="min-w-0 flex-1 text-right">
               <p className="truncate font-medium text-text">{displayName}</p>
-              <p className="truncate text-xs text-text-muted">{user?.email || ""}</p>
+              <p className="truncate text-xs text-text-muted">
+                {user?.email || ""}
+              </p>
             </div>
             <ChevronUp
               className={cn(
