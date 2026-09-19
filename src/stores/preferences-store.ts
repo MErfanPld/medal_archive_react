@@ -23,35 +23,35 @@ export interface AccentPreset {
 export const ACCENT_PRESETS: AccentPreset[] = [
   {
     id: "burgundy",
-    label: "بورگاندی (پیش‌فرض)",
+    label: "زرشکی",
     primary: "#6E1F2A",
     deep: "#43131B",
     accent: "#9B3A49",
   },
   {
     id: "slate",
-    label: "اسلیت",
+    label: "خاکستری",
     primary: "#334155",
     deep: "#1e293b",
     accent: "#64748b",
   },
   {
     id: "emerald",
-    label: "زمردی",
+    label: "سبز",
     primary: "#047857",
     deep: "#064e3b",
     accent: "#10b981",
   },
   {
     id: "indigo",
-    label: "نیلی",
+    label: "آبی",
     primary: "#4338ca",
     deep: "#312e81",
     accent: "#6366f1",
   },
   {
     id: "amber",
-    label: "کهربایی",
+    label: "نارنجی",
     primary: "#b45309",
     deep: "#78350f",
     accent: "#d97706",
@@ -118,6 +118,7 @@ export const usePreferencesStore = create<PreferencesState>()(
 
       setAccentId: (id) => {
         set({ accentId: id });
+        // User interaction is always post-hydration
         const s = get();
         applyPreferencesToDocument(id, s.fontScale, s.colorMode);
       },
