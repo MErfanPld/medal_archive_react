@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { User, Palette, Camera } from "lucide-react";
+import { User, Palette } from "lucide-react";
 import { useAuthStore, refreshCurrentUser } from "@/stores/auth-store";
 import {
   usePreferencesStore,
@@ -11,9 +10,6 @@ import {
   type FontScale,
   type ColorMode,
 } from "@/stores/preferences-store";
-import { usersApi } from "@/lib/api/users";
-import { getErrorMessage } from "@/lib/api/errors";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,20 +21,11 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-
-type ProfileFormValues = {
-  first_name: string;
-  last_name: string;
-  email: string;
-};
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
   const isAuthHydrated = useAuthStore((s) => s.isHydrated);
-  const toast = useToast();
 
   const accentId = usePreferencesStore((s) => s.accentId);
   const fontScale = usePreferencesStore((s) => s.fontScale);
@@ -49,54 +36,21 @@ export default function SettingsPage() {
   const applyToDocument = usePreferencesStore((s) => s.applyToDocument);
   const isHydrated = usePreferencesStore((s) => s.isHydrated);
 
-  const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
     if (isHydrated) applyToDocument();
   }, [isHydrated, applyToDocument]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { isDirty },
-    reset,
-  } = useForm<ProfileFormValues>({
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-    },
-  });
-
-  // Load profile from store + GET /api/users/me/ and fill form fields
+  // Refresh profile from GET /api/users/me/ (read-only display)
   useEffect(() => {
     if (!isAuthHydrated) return;
     let cancelled = false;
 
-    const fillFromUser = (u: typeof user) => {
-      if (!u || cancelled) return;
-      reset({
-        first_name: (u.first_name as string | null | undefined) ?? "",
-        last_name: (u.last_name as string | null | undefined) ?? "",
-        email: (u.email as string | null | undefined) ?? "",
-      });
-    };
-
-    // Immediately fill from persisted session so fields are not empty while loading
-    fillFromUser(useAuthStore.getState().user);
-
     (async () => {
       setLoadingProfile(true);
       try {
-        const me = await refreshCurrentUser();
-        if (!cancelled && me) {
-          fillFromUser(me);
-        } else if (!cancelled) {
-          fillFromUser(useAuthStore.getState().user);
-        }
-      } catch {
-        if (!cancelled) fillFromUser(useAuthStore.getState().user);
+        await refreshCurrentUser();
       } finally {
         if (!cancelled) setLoadingProfile(false);
       }
@@ -105,46 +59,14 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthHydrated, reset]);
-
-  const onSaveProfile = handleSubmit(async (values) => {
-    if (!user?.id) {
-      toast.error("نشست کاربری معتبر نیست. دوباره وارد شوید.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const updated = await usersApi.partialUpdate(user.id, {
-        first_name: values.first_name.trim(),
-        last_name: values.last_name.trim(),
-        email: values.email.trim() || null,
-      });
-
-      setUser({
-        ...user,
-        first_name: updated.first_name ?? values.first_name,
-        last_name: updated.last_name ?? values.last_name,
-        email: updated.email ?? (values.email.trim() || null),
-      });
-
-      await refreshCurrentUser();
-
-      toast.success("پروفایل با موفقیت ذخیره شد");
-      reset({
-        first_name: values.first_name.trim(),
-        last_name: values.last_name.trim(),
-        email: values.email.trim(),
-      });
-    } catch (err) {
-      toast.error(
-        getErrorMessage(err, "خطا در ذخیره پروفایل. لطفاً دوباره تلاش کنید.")
-      );
-    } finally {
-      setSaving(false);
-    }
-  });
+  }, [isAuthHydrated]);
 
   const rolesLabel = user?.roles?.map((r) => r.name).join("، ") || "—";
+
+  const displayName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
+    user?.username ||
+    "—";
 
   const initials =
     [user?.first_name?.[0], user?.last_name?.[0]]
@@ -287,7 +209,7 @@ export default function SettingsPage() {
             <CardTitle>پروفایل</CardTitle>
           </div>
           <CardDescription>
-            اطلاعات حساب از API بارگذاری می‌شود. نام کاربری و نقش فقط خواندنی هستند.
+            اطلاعات حساب فقط برای مشاهده است و قابل ویرایش نیست.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -302,7 +224,7 @@ export default function SettingsPage() {
               اطلاعات کاربر در دسترس نیست. لطفاً دوباره وارد شوید.
             </p>
           ) : (
-            <form onSubmit={onSaveProfile} className="space-y-6">
+            <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <div
                   className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-lg font-semibold text-primary"
@@ -311,12 +233,10 @@ export default function SettingsPage() {
                   {initials}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-text">
-                    {user?.first_name || user?.last_name
-                      ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
-                      : user?.username}
+                  <p className="text-sm font-medium text-text">{displayName}</p>
+                  <p className="text-xs text-text-muted" dir="ltr">
+                    @{user.username}
                   </p>
-                  <p className="text-xs text-text-muted">{user?.email || "—"}</p>
                 </div>
               </div>
 
@@ -324,8 +244,9 @@ export default function SettingsPage() {
                 <div>
                   <Label>نام کاربری</Label>
                   <Input
-                    value={user?.username ?? ""}
+                    value={user.username ?? ""}
                     disabled
+                    readOnly
                     dir="ltr"
                     className="mt-1.5"
                   />
@@ -333,7 +254,7 @@ export default function SettingsPage() {
                 <div>
                   <Label>نقش</Label>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {user?.roles?.length ? (
+                    {user.roles?.length ? (
                       user.roles.map((r) => (
                         <Badge key={r.id} variant="primary">
                           {r.name}
@@ -345,49 +266,35 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="first_name">نام</Label>
+                  <Label>نام</Label>
                   <Input
-                    id="first_name"
+                    value={user.first_name ?? "—"}
+                    disabled
+                    readOnly
                     className="mt-1.5"
-                    autoComplete="given-name"
-                    {...register("first_name")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="last_name">نام خانوادگی</Label>
+                  <Label>نام خانوادگی</Label>
                   <Input
-                    id="last_name"
+                    value={user.last_name ?? "—"}
+                    disabled
+                    readOnly
                     className="mt-1.5"
-                    autoComplete="family-name"
-                    {...register("last_name")}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="email">ایمیل</Label>
+                  <Label>ایمیل</Label>
                   <Input
-                    id="email"
-                    type="email"
+                    value={user.email ?? "—"}
+                    disabled
+                    readOnly
                     dir="ltr"
                     className="mt-1.5"
-                    autoComplete="email"
-                    {...register("email")}
                   />
                 </div>
               </div>
-
-              <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
-                {isDirty && (
-                  <span className="text-xs text-text-muted">تغییرات ذخیره نشده</span>
-                )}
-                <Button
-                  type="submit"
-                  loading={saving}
-                  disabled={saving || !isDirty || !user}
-                >
-                  ذخیره تغییرات
-                </Button>
-              </div>
-            </form>
+            </div>
           )}
         </CardContent>
       </Card>
