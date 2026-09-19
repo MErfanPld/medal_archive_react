@@ -43,7 +43,7 @@ export function AuthGuard({ children, permission, fallback }: AuthGuardProps) {
       // Fast path: cached user → show UI, refresh profile in background
       if (user) {
         setHardChecking(false);
-        void refreshCurrentUser().then(() => {
+        void refreshCurrentUser({ clearOnError: true }).then(() => {
           if (cancelled) return;
           const state = useAuthStore.getState();
           if (!state.accessToken || !state.user) {
@@ -56,7 +56,7 @@ export function AuthGuard({ children, permission, fallback }: AuthGuardProps) {
       }
 
       // No cached user → must wait for /me
-      await refreshCurrentUser();
+      await refreshCurrentUser({ clearOnError: true });
       if (cancelled) return;
 
       const state = useAuthStore.getState();
