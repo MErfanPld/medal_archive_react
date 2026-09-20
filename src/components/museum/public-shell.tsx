@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchOverlay } from "@/components/museum/search-overlay";
 
@@ -43,11 +43,11 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
               />
             </span>
             <span className="leading-tight">
-              <span className="block text-[0.65rem] font-semibold tracking-[0.12em] text-[#C8A75D]">
+              <span className="block text-[0.65rem] font-semibold tracking-[0.18em] text-[#C8A75D]">
                 ناصر صلب
               </span>
               <span className="block text-sm font-semibold text-[#F5F2EA]">
-                مجموعه آثار
+                مجموعه آثار ناصر صلب
               </span>
             </span>
           </Link>
@@ -56,7 +56,8 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
             {NAV.map((item) => {
               const active = item.exact
                 ? pathname === item.href
-                : pathname === item.href || pathname.startsWith(item.href + "/");
+                : pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
@@ -84,6 +85,14 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
               <Search className="size-4" />
               <span className="hidden sm:inline">جستجو</span>
             </button>
+            <Link
+              href="/admin/dashboard"
+              className="flex items-center gap-2 rounded-full border border-[#C8A75D]/35 bg-[#C8A75D]/15 px-3 py-2 text-sm font-medium text-[#C8A75D] transition hover:bg-[#C8A75D]/25"
+              aria-label="ورود به داشبورد"
+            >
+              <LayoutDashboard className="size-4" />
+              <span className="hidden sm:inline">داشبورد</span>
+            </Link>
             <button
               type="button"
               className="rounded-lg p-2 text-[#A8A8A8] lg:hidden"
@@ -107,6 +116,13 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                href="/admin/dashboard"
+                className="mt-2 flex items-center gap-2 rounded-lg border border-[#C8A75D]/30 bg-[#C8A75D]/10 px-3 py-2.5 text-sm font-medium text-[#C8A75D]"
+              >
+                <LayoutDashboard className="size-4" />
+                داشبورد
+              </Link>
             </nav>
           </div>
         ) : null}
@@ -123,7 +139,8 @@ export function MuseumPublicShell({ children }: { children: React.ReactNode }) {
             className="h-12 w-12 object-contain opacity-90 invert"
           />
           <p className="text-xs text-[#A8A8A8]">
-            © {new Date().getFullYear()} مجموعه آثار ناصر صلب — همه حقوق محفوظ است.
+            © {new Date().getFullYear()} مجموعه آثار ناصر صلب — همه حقوق محفوظ
+            است.
           </p>
         </div>
       </footer>
