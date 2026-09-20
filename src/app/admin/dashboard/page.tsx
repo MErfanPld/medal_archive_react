@@ -4,8 +4,23 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
-  Medal, Coins, Banknote, Package, Sword, Gem, Hexagon, Stamp, CircleDot,
-  FolderOpen, Users, Plus, Landmark, RefreshCw, ArrowUpLeft, Layers, TrendingUp,
+  Medal,
+  Coins,
+  Banknote,
+  Package,
+  Sword,
+  Gem,
+  Hexagon,
+  Stamp,
+  CircleDot,
+  FolderOpen,
+  Users,
+  Plus,
+  Landmark,
+  RefreshCw,
+  ArrowUpLeft,
+  Layers,
+  TrendingUp,
 } from "lucide-react";
 import { getMedals } from "@/lib/data/medals";
 import { getCoins } from "@/lib/data/coins";
@@ -19,14 +34,20 @@ import { getTasbihs } from "@/lib/data/tasbih";
 import { getCategories } from "@/lib/data/categories";
 import { getUsers } from "@/lib/data/users";
 import { formatNumber, formatDate, cn, resolvePrimaryImage } from "@/lib/utils";
-import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 
 type CollectionKey =
-  | "medals" | "coins" | "banknotes" | "antiques" | "knives"
-  | "rings" | "seals" | "stamps" | "tasbih";
+  | "medals"
+  | "coins"
+  | "banknotes"
+  | "antiques"
+  | "knives"
+  | "rings"
+  | "seals"
+  | "stamps"
+  | "tasbih";
 
 const COLLECTIONS: {
   key: CollectionKey;
@@ -77,12 +98,6 @@ type RecentItem = {
 };
 
 export default function DashboardPage() {
-  const user = useAuthStore((s) => s.user);
-  const displayName =
-    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-    user?.username ||
-    "کاربر";
-
   const collectionQueries = useQueries({
     queries: COLLECTIONS.map((c) => ({
       queryKey: ["dashboard", c.key],
@@ -208,7 +223,9 @@ export default function DashboardPage() {
       <Alert variant="danger" title="خطا در بارگذاری داشبورد">
         اتصال به API برقرار نشد.
         <div className="mt-3">
-          <Button type="button" variant="outline" size="sm" onClick={refetchAll}>تلاش مجدد</Button>
+          <Button type="button" variant="outline" size="sm" onClick={refetchAll}>
+            تلاش مجدد
+          </Button>
         </div>
       </Alert>
     );
@@ -216,44 +233,62 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-bl from-[#43131B] via-[#5a1822] to-[#2a0f14] p-6 text-[#F5F2EA] shadow-lg sm:p-8">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-2xl border border-border p-6 text-[#F5F2EA] shadow-lg sm:p-8">
         <div
-          className="pointer-events-none absolute inset-0 opacity-30"
-          style={{
-            background:
-              "radial-gradient(ellipse 60% 80% at 90% 20%, rgba(110,31,42,0.55), transparent 55%)",
-          }}
+          className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center"
+          style={{ backgroundImage: "url(/brand/study-banner.jpg)" }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-l from-black/80 via-black/70 to-black/55"
+          aria-hidden
         />
         <div className="relative z-[1] flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm text-rose-200/90">{todayLabel}</p>
+            <p className="text-sm text-[#C8A75D]">{todayLabel}</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-              سلام، {displayName}
+              پنل مدیریت آثار ناصر صلب
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
-              نمای کلی مجموعه آثار ناصر صلب — همه دسته‌بندی‌ها، آمار و آخرین ثبت‌ها.
+              نمای کلی مجموعه — همه دسته‌بندی‌ها، آمار و آخرین ثبت‌ها در یک نگاه.
             </p>
             <div className="mt-5 flex flex-wrap gap-4 text-sm">
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
                 <p className="text-xs text-white/60">کل آثار</p>
-                <p className="mt-0.5 text-xl font-semibold tabular-nums text-rose-200">{formatNumber(totalItems)}</p>
+                <p className="mt-0.5 text-xl font-semibold tabular-nums text-[#C8A75D]">
+                  {formatNumber(totalItems)}
+                </p>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
                 <p className="text-xs text-white/60">دسته‌بندی‌ها</p>
-                <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatNumber(totalCategories)}</p>
+                <p className="mt-0.5 text-xl font-semibold tabular-nums">
+                  {formatNumber(totalCategories)}
+                </p>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
                 <p className="text-xs text-white/60">کاربران</p>
-                <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatNumber(totalUsers)}</p>
+                <p className="mt-0.5 text-xl font-semibold tabular-nums">
+                  {formatNumber(totalUsers)}
+                </p>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-2.5 backdrop-blur">
                 <p className="text-xs text-white/60">انواع مجموعه</p>
-                <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatNumber(COLLECTIONS.length)}</p>
+                <p className="mt-0.5 text-xl font-semibold tabular-nums">
+                  {formatNumber(COLLECTIONS.length)}
+                </p>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white/5 text-[#F5F2EA] hover:bg-white/10" onClick={refetchAll} disabled={isFetching}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-white/20 bg-white/5 text-[#F5F2EA] hover:bg-white/10"
+              onClick={refetchAll}
+              disabled={isFetching}
+            >
               <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
               به‌روزرسانی
             </Button>
@@ -273,19 +308,32 @@ export default function DashboardPage() {
             <Layers className="size-5 text-primary" />
             <h2 className="text-section-title">آمار مجموعه‌ها</h2>
           </div>
-          <p className="text-xs text-text-muted">{formatNumber(totalItems)} اثر در {formatNumber(COLLECTIONS.length)} دسته</p>
+          <p className="text-xs text-text-muted">
+            {formatNumber(totalItems)} اثر در {formatNumber(COLLECTIONS.length)} دسته
+          </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           {COLLECTIONS.map((c) => {
             const Icon = c.icon;
             return (
-              <Link key={c.key} href={c.href} className="group relative overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+              <Link
+                key={c.key}
+                href={c.href}
+                className="group relative overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-sm text-text-muted">{c.label}</p>
-                    <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-text">{formatNumber(counts[c.key])}</p>
+                    <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-text">
+                      {formatNumber(counts[c.key])}
+                    </p>
                   </div>
-                  <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-110", c.accent)}>
+                  <span
+                    className={cn(
+                      "flex size-11 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-110",
+                      c.accent
+                    )}
+                  >
                     <Icon className="size-5" />
                   </span>
                 </div>
@@ -312,13 +360,20 @@ export default function DashboardPage() {
               {chartData.map((d) => {
                 const pct = Math.round((d.value / chartMax) * 100);
                 return (
-                  <Link key={d.key} href={d.href} className="group block rounded-lg px-1 py-0.5 transition-colors hover:bg-surface-muted/60">
+                  <Link
+                    key={d.key}
+                    href={d.href}
+                    className="group block rounded-lg px-1 py-0.5 transition-colors hover:bg-surface-muted/60"
+                  >
                     <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
                       <span className="font-medium text-text">{d.label}</span>
                       <span className="tabular-nums text-text-muted">{formatNumber(d.value)}</span>
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, 4)}%`, background: d.color }} />
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(pct, 4)}%`, background: d.color }}
+                      />
                     </div>
                   </Link>
                 );
@@ -336,7 +391,11 @@ export default function DashboardPage() {
             {COLLECTIONS.map((c) => {
               const Icon = c.icon;
               return (
-                <Link key={c.key} href={c.newHref} className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface-muted/40 px-2.5 py-2.5 text-xs font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/5">
+                <Link
+                  key={c.key}
+                  href={c.newHref}
+                  className="flex items-center gap-2 rounded-lg border border-border/80 bg-surface-muted/40 px-2.5 py-2.5 text-xs font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/5"
+                >
                   <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", c.accent)}>
                     <Icon className="size-3.5" />
                   </span>
@@ -346,10 +405,16 @@ export default function DashboardPage() {
             })}
           </div>
           <div className="mt-4 space-y-2 border-t border-border pt-4">
-            <Link href="/admin/categories" className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text">
+            <Link
+              href="/admin/categories"
+              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
+            >
               <FolderOpen className="size-4" /> مدیریت دسته‌بندی‌ها
             </Link>
-            <Link href="/admin/users" className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text">
+            <Link
+              href="/admin/users"
+              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
+            >
               <Users className="size-4" /> مدیریت کاربران
             </Link>
           </div>
@@ -372,7 +437,10 @@ export default function DashboardPage() {
               const Icon = meta?.icon ?? Package;
               return (
                 <li key={`${item.typeKey}-${item.id}`}>
-                  <Link href={item.href} className="flex items-center gap-3 py-3 transition-colors hover:bg-surface-muted/50">
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 py-3 transition-colors hover:bg-surface-muted/50"
+                  >
                     <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface-muted">
                       {item.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -384,7 +452,8 @@ export default function DashboardPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-text">{item.name}</p>
                       <p className="mt-0.5 text-xs text-text-muted">
-                        {item.typeLabel}{item.created_at ? ` · ${formatDate(item.created_at)}` : ""}
+                        {item.typeLabel}
+                        {item.created_at ? ` · ${formatDate(item.created_at)}` : ""}
                       </p>
                     </div>
                     <ArrowUpLeft className="size-4 shrink-0 text-text-subtle" />
@@ -400,13 +469,18 @@ export default function DashboardPage() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-section-title">دسته‌بندی‌ها</h2>
-            <Link href="/admin/categories" className="text-xs font-medium text-primary hover:underline">مشاهده همه</Link>
+            <Link href="/admin/categories" className="text-xs font-medium text-primary hover:underline">
+              مشاهده همه
+            </Link>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {(categoriesQ.data?.results ?? []).slice(0, 8).map((c) => (
-              <Link key={c.id} href="/admin/categories" className="rounded-xl border border-border bg-surface-muted/30 px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-sm">
-                <p className="font-medium text-text">{c.name}</p>
-                <p className="mt-1 line-clamp-1 text-xs text-text-muted">{c.description || "بدون توضیح"}</p>
+              <Link
+                key={c.id}
+                href="/admin/categories"
+                className="rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-text shadow-sm transition hover:border-primary/30"
+              >
+                {c.name}
               </Link>
             ))}
           </div>
