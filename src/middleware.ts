@@ -2,20 +2,18 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Route protection — only the admin panel requires login.
- * Public museum site (/museum, /, etc.) is open without auth.
+ * Route protection — admin panel AND museum view require login.
+ * Full session validation still happens client-side (Zustand + /me).
  */
 
-const PUBLIC_PATHS = ["/", "/login", "/invite", "/activate", "/museum"];
+const PUBLIC_PATHS = ["/", "/login", "/invite", "/activate"];
 const AUTH_COOKIE = "medal_auth";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Static assets always pass
   if (
-    PUBLIC_PATHS.some(
-      (p) => pathname === p || pathname.startsWith(`${p}/`)
-    ) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.includes(".")
@@ -23,8 +21,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Only admin panel requires login
-  const isProtected = pathname.startsWith("/admin");
+  // Explicit public paths (login, invite, activate)
+  if (
+    PUBLIC_PATHS.some(
+      (p) => pathname === p || (p !== "/" && pathname.startsWith(`${p}/`))
+    )
+  ) {
+    return NextResponse.next();
+  }
+
+  // Protected: admin + museum (entire site view)
+  const isProtected =
+    pathname.startsWith("/admin") || pathname.startsWith("/museum");
 
   if (!isProtected) {
     return NextResponse.next();

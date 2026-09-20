@@ -1,14 +1,19 @@
 import "./museum-experience.css";
 import { MuseumPublicShell } from "@/components/museum/public-shell";
+import { AuthGuard } from "@/components/auth/auth-guard";
 
 /**
- * Public museum site — no login required.
- * Admin panel remains protected via middleware + AuthGuard.
+ * Museum view — requires login (same session as admin panel).
+ * Guests are redirected to /login.
  */
 export default function MuseumLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <MuseumPublicShell>{children}</MuseumPublicShell>;
+  return (
+    <AuthGuard>
+      <MuseumPublicShell>{children}</MuseumPublicShell>
+    </AuthGuard>
+  );
 }
