@@ -21,7 +21,7 @@ import {
   historicalPeriodOptions,
   yearOptions,
 } from "@/components/admin/medal-form-options";
-import { Combobox } from "@/components/ui/combobox";
+import { CreatableSelect } from "@/components/ui/creatable-select";
 
 const schema = z.object({
   name: z.string().min(2, "نام الزامی است"),
@@ -38,8 +38,6 @@ const schema = z.object({
   }),
   historical_period: z.string().optional(),
   material: z.string().optional(),
-  inscription: z.string().optional().nullable(),
-  seal_type: z.string().optional(),
   dimensions: z.string().optional(),
   weight: z.string().optional().nullable(),
   maker: z.string().optional(),
@@ -62,8 +60,6 @@ function toDefaults(item?: Seal | null): FormValues {
     year: item?.year ?? null,
     historical_period: item?.historical_period ?? "",
     material: item?.material ?? "",
-    inscription: item?.inscription ?? "",
-    seal_type: item?.seal_type ?? "",
     dimensions: item?.dimensions ?? "",
     weight: item?.weight ?? "",
     maker: item?.maker ?? "",
@@ -85,8 +81,6 @@ function toRequest(v: FormValues): SealRequest {
     year: v.year ?? null,
     historical_period: v.historical_period || undefined,
     material: v.material || undefined,
-    inscription: v.inscription || null,
-    seal_type: v.seal_type || undefined,
     dimensions: v.dimensions || undefined,
     weight: v.weight || null,
     maker: v.maker || undefined,
@@ -123,12 +117,7 @@ export function SealForm({ seal, onSubmit, onCancel, loading, submitLabel = "ذ�
   ];
 
   return (
-    <form
-      className="space-y-6"
-      onSubmit={handleSubmit(async (values) => {
-        await onSubmit(toRequest(values));
-      })}
-    >
+    <form className="space-y-6" onSubmit={handleSubmit(async (values) => { await onSubmit(toRequest(values)); })}>
       <Card>
         <CardHeader><CardTitle>اطلاعات پایه</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -145,9 +134,7 @@ export function SealForm({ seal, onSubmit, onCancel, loading, submitLabel = "ذ�
           </div>
           <div>
             <Label>کشور</Label>
-            <Controller name="country" control={control} render={({ field }) => (
-              <Combobox className="mt-1.5" value={field.value ?? ""} onChange={field.onChange} options={countryOptions} placeholder="کشور" />
-            )} />
+            <CreatableSelect id="country" name="country" control={control} options={countryOptions} storageKey="country" placeholder="انتخاب یا افزودن…" />
           </div>
           <div>
             <Label>سال</Label>
@@ -157,23 +144,11 @@ export function SealForm({ seal, onSubmit, onCancel, loading, submitLabel = "ذ�
           </div>
           <div>
             <Label>دوره تاریخی</Label>
-            <Controller name="historical_period" control={control} render={({ field }) => (
-              <Select className="mt-1.5" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value)} options={[{ value: "", label: "—" }, ...historicalPeriodOptions]} />
-            )} />
+            <CreatableSelect id="historical_period" name="historical_period" control={control} options={historicalPeriodOptions} storageKey="historical_period" placeholder="انتخاب یا افزودن…" />
           </div>
           <div>
             <Label>جنس / ماده</Label>
-            <Controller name="material" control={control} render={({ field }) => (
-              <Combobox className="mt-1.5" value={field.value ?? ""} onChange={field.onChange} options={materialOptions} placeholder="جنس" />
-            )} />
-          </div>
-          <div>
-            <Label>متن / کتیبه مهر</Label>
-            <Input className="mt-1.5" {...register("inscription")} placeholder="متن حک‌شده" />
-          </div>
-          <div>
-            <Label>نوع / شکل مهر</Label>
-            <Input className="mt-1.5" {...register("seal_type")} />
+            <CreatableSelect id="material" name="material" control={control} options={materialOptions} storageKey="material" placeholder="انتخاب یا افزودن…" />
           </div>
           <div>
             <Label>ابعاد</Label>
@@ -193,15 +168,11 @@ export function SealForm({ seal, onSubmit, onCancel, loading, submitLabel = "ذ�
           </div>
           <div>
             <Label>اصالت</Label>
-            <Controller name="authenticity" control={control} render={({ field }) => (
-              <Select className="mt-1.5" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value)} options={[{ value: "", label: "—" }, ...authenticityOptions]} />
-            )} />
+            <CreatableSelect id="authenticity" name="authenticity" control={control} options={authenticityOptions} storageKey="authenticity" placeholder="انتخاب یا افزودن…" />
           </div>
           <div>
             <Label>کیفیت</Label>
-            <Controller name="quality" control={control} render={({ field }) => (
-              <Select className="mt-1.5" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value)} options={[{ value: "", label: "—" }, ...qualityOptions]} />
-            )} />
+            <CreatableSelect id="quality" name="quality" control={control} options={qualityOptions} storageKey="quality" placeholder="انتخاب یا افزودن…" />
           </div>
           <div>
             <Label>ارزش فعلی</Label>
@@ -209,9 +180,7 @@ export function SealForm({ seal, onSubmit, onCancel, loading, submitLabel = "ذ�
           </div>
           <div>
             <Label>واحد پول</Label>
-            <Controller name="purchase_currency" control={control} render={({ field }) => (
-              <Select className="mt-1.5" value={field.value ?? "IRR"} onChange={(e) => field.onChange(e.target.value)} options={currencyOptions} />
-            )} />
+            <CreatableSelect id="purchase_currency" name="purchase_currency" control={control} options={currencyOptions} storageKey="currency" placeholder="انتخاب یا افزودن…" />
           </div>
           <div className="sm:col-span-2">
             <Label>یادداشت</Label>
